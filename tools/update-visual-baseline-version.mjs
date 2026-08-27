@@ -1,7 +1,5 @@
 import { copyFileSync, existsSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
 
-const root = new URL("../", import.meta.url);
 const packageJson = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
 const snapshotDir = new URL("../tests/e2e/snapshots/", import.meta.url);
 const required = [

@@ -13,15 +13,29 @@ export interface ZonedParts extends CalendarDate {
 }
 
 const partsFormatterCache = new Map<string, Intl.DateTimeFormat>();
+const safeTimeZoneCache = new Map<string, string>();
 
+/**
+ * Kontrollib ajavööndi nime ja tagastab vajadusel Europe/Tallinn'i.
+ *
+ * Tulemus on mällu jäetud: kontroll ise ehitas iga kutse peale uue
+ * `Intl.DateTimeFormat`-i ja vormindas kuupäeva. Seda kutsutakse iga
+ * `zonedParts`-i ja `getFormatters`-i kaudu — sekundilise kella, paneelide
+ * tiksumise ja iga kuupäeva vormindamise pealt kümneid kordi sekundis.
+ */
 export function safeTimeZone(value: unknown): string {
   const candidate = String(value || "Europe/Tallinn");
+  const cached = safeTimeZoneCache.get(candidate);
+  if (cached !== undefined) return cached;
+  let resolved: string;
   try {
     new Intl.DateTimeFormat("et-EE", { timeZone: candidate }).format(new Date());
-    return candidate;
+    resolved = candidate;
   } catch {
-    return "Europe/Tallinn";
+    resolved = "Europe/Tallinn";
   }
+  safeTimeZoneCache.set(candidate, resolved);
+  return resolved;
 }
 
 function partsFormatter(timeZone: string): Intl.DateTimeFormat {

@@ -1,6 +1,6 @@
 import type { ElectricityPoint } from "../../data/types";
 import { formatNumber } from "../dom";
-import { patchAttribute, svgElement } from "./svg";
+import { svgElement } from "./svg";
 
 interface CleanPoint {
   time: string;

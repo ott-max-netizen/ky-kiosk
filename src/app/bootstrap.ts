@@ -3,14 +3,16 @@ import { endpointConfigured, tokenConfigured, type RuntimeConfig } from "../conf
 import { readRuntimeConfig } from "../config/runtime-config";
 import { AppsScriptClient, ConfigurationError } from "../data/apps-script-client";
 import { createSectionVersions, mergeIncoming } from "../data/merge";
-import type { DashboardData, IncomingDashboardPayload, SectionName, SectionVersions } from "../data/types";
+import type { IncomingDashboardPayload, SectionName, SectionVersions } from "../data/types";
 import { validateDashboardPayload } from "../data/validate";
 import { errorMessage, logger } from "../diagnostics/logger";
 import { applyPixelShift, installInteractionGuards } from "../ui/layout";
 import { AppView } from "../ui/app-view";
-import { requestSupervisedReload, retireServiceWorkers, tickMaintenance, tickSupervisor } from "./lifecycle";
+import { retireServiceWorkers, tickMaintenance, tickSupervisor } from "./lifecycle";
 import { Scheduler } from "./scheduler";
 import { AppStore } from "./store";
+
+const CACHE_WRITE_PROBLEM = "Vahemälu: viimaseid andmeid ei õnnestunud salvestada";
 
 interface Params {
   demo: boolean;
@@ -121,11 +123,26 @@ export async function bootstrap(): Promise<void> {
     const state = store.get();
     const merged = mergeIncoming(state.data, payload, state.versions, new Date());
     store.setData(merged.data, merged.versions);
-    if (cache) await repository.set(merged.data);
+    if (!cache) return;
+    // Vahemällu kirjutamise tõrge (kvoot, blokeeritud salvestus, rikutud DB) ei ole
+    // ühendusviga. Varem lekkis see erind `sync()` catch-haru ja kiosk teatas
+    // „Ühendus puudub“ ning alustas backoff'i, kuigi andmed olid just kohale jõudnud.
+    try {
+      await repository.set(merged.data);
+      store.clearRuntimeProblem(CACHE_WRITE_PROBLEM);
+    } catch (error) {
+      logger.warn("Vahemällu salvestamine ebaõnnestus", errorMessage(error));
+      store.addRuntimeProblem(CACHE_WRITE_PROBLEM);
+    }
   };
 
   const sync = async () => {
-    if (params.demo || stopped || store.get().status.syncing) return;
+    if (params.demo || stopped) return;
+    if (store.get().status.syncing) {
+      // Käimasolev sünkroonimine plaanib ise järgmise; ilma selleta jäi ahel katki
+      // ja uus päring tuli alles minutise watchdog'i pealt.
+      return;
+    }
     clearSyncTimers();
     const start = performance.now();
     store.patchStatus({ syncing: true, connectionText: "Uuendan andmeid…", connectionState: navigator.onLine ? "neutral" : "offline" });
@@ -148,7 +165,7 @@ export async function bootstrap(): Promise<void> {
       const configuration = error instanceof ConfigurationError || Boolean(configurationMessage(config));
       store.patchStatus({
         syncing: false,
-        connectionState: navigator.onLine ? "offline" : "offline",
+        connectionState: "offline",
         connectionText: configuration ? message : "Ühendus puudub – kuvatakse viimaseid andmeid",
         lastSyncDurationMs: Math.round(performance.now() - start),
         lastError: message,
@@ -190,7 +207,7 @@ export async function bootstrap(): Promise<void> {
     });
   });
   scheduler.register("maintenance", 30_000, () => {
-    tickMaintenance(config, params.demo);
+    tickMaintenance(config, params.demo, new Date(), store.get().status.startedAtMs);
     void fetch("./heartbeat", { method: "POST", cache: "no-store" }).catch(() => undefined);
   });
   scheduler.register("debug", 10_000, () => view.updateDebug(), true);

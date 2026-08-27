@@ -31,7 +31,7 @@ const output = `// GENEREERITUD fail. Allikas: src/domain/**\n` +
 `function safeTimeZone_(value) {\n` +
 `  var tz = String(value || KU.defaultTimezone);\n` +
 `  try { Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd HH:mm'); return tz; }\n` +
-`  catch (err) { console.warn('Vigane ajavöönd \"' + tz + '\", kasutan ' + KU.defaultTimezone); return KU.defaultTimezone; }\n` +
+`  catch (err) { console.warn('Vigane ajavöönd "' + tz + '", kasutan ' + KU.defaultTimezone); return KU.defaultTimezone; }\n` +
 `}\n\n` +
 `function normalizePhenomenon_(value) {\n` +
 `  return String(value || '').trim().toLowerCase().replace(/[^a-z0-9õäöüšž]+/g, ' ').trim();\n` +

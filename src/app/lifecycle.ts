@@ -7,23 +7,47 @@ const SIX_HOURS_MS = 6 * 60 * 60 * 1000;
 
 export type ReloadReason = "watchdog" | "nightly";
 
-function persistentStorage(): Storage {
-  return window.localStorage;
+/**
+ * localStorage viskab erindi, kui salvestus on poliitikaga blokeeritud või kettal
+ * pole ruumi. Varem lekkis see erind välja ja jättis kogu hoolduse tegemata;
+ * nüüd käitub rakendus lihtsalt nii, nagu ajalugu poleks kättesaadav.
+ */
+function persistentStorage(): Storage | null {
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
+function readStoredItem(key: string): string | null {
+  try {
+    return persistentStorage()?.getItem(key) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredItem(key: string, value: string): void {
+  try {
+    persistentStorage()?.setItem(key, value);
+  } catch {
+    // Salvestus pole saadaval; reload'i ajalugu jääb ainult selle sessiooni sisse.
+  }
 }
 
 function readReloadLog(nowMs = Date.now()): number[] {
-  const storage = persistentStorage();
+  let recent: number[] = [];
   try {
-    const parsed = JSON.parse(storage.getItem(RELOAD_LOG_KEY) ?? "[]") as unknown;
-    const recent = Array.isArray(parsed)
+    const parsed = JSON.parse(readStoredItem(RELOAD_LOG_KEY) ?? "[]") as unknown;
+    recent = Array.isArray(parsed)
       ? parsed.map(Number).filter((value) => Number.isFinite(value) && nowMs - value < SIX_HOURS_MS)
       : [];
-    storage.setItem(RELOAD_LOG_KEY, JSON.stringify(recent));
-    return recent;
   } catch {
-    storage.setItem(RELOAD_LOG_KEY, "[]");
-    return [];
+    recent = [];
   }
+  writeStoredItem(RELOAD_LOG_KEY, JSON.stringify(recent));
+  return recent;
 }
 
 export function requestSupervisedReload(reason: ReloadReason, nowMs = Date.now(), demoMode = false): boolean {
@@ -32,7 +56,7 @@ export function requestSupervisedReload(reason: ReloadReason, nowMs = Date.now()
   const recent = readReloadLog(nowMs);
   if (reason === "watchdog" && recent.length > 0) return false;
   recent.push(nowMs);
-  persistentStorage().setItem(RELOAD_LOG_KEY, JSON.stringify(recent));
+  writeStoredItem(RELOAD_LOG_KEY, JSON.stringify(recent));
   location.reload();
   return true;
 }
@@ -58,15 +82,37 @@ export function tickSupervisor(input: SupervisorInput): "noop" | "sync" | "reloa
   return "noop";
 }
 
-export function tickMaintenance(config: RuntimeConfig, demoMode: boolean, now = new Date()): boolean {
+/**
+ * Öine reload (C-28). `sessionStartedAtMs` on selle brauserisessiooni algus;
+ * 0 tähendab „teadmata“ ja säilitab varasema käitumise.
+ *
+ * Ilma sessiooni alguseta tegi iga pärast 04:10 alanud käivitus 30 s jooksul veel
+ * ühe reload'i, sest tänast märget veel polnud. Kui localStorage oli kättesaamatu
+ * (poliitika, incognito, täis ketas), ei jäänud märge kunagi püsima ja kiosk
+ * laadis end lõputult iga 30 sekundi järel uuesti. Sessioon, mis algas juba pärast
+ * sihtaega, ei ole midagi vahele jätnud — siis pole ka midagi järele teha.
+ */
+export function tickMaintenance(
+  config: RuntimeConfig,
+  demoMode: boolean,
+  now = new Date(),
+  sessionStartedAtMs = 0,
+): boolean {
   if (demoMode) return false;
   const parts = zonedParts(now, config.timeZone);
   const dateKey = ymdKey(parts);
   const currentMinutes = parts.hour * 60 + parts.minute;
   const targetMinutes = config.nightlyReloadHour * 60 + config.nightlyReloadMinute;
-  const storage = persistentStorage();
-  if (currentMinutes < targetMinutes || storage.getItem(NIGHTLY_RELOAD_KEY) === dateKey) return false;
-  storage.setItem(NIGHTLY_RELOAD_KEY, dateKey);
+  if (currentMinutes < targetMinutes || readStoredItem(NIGHTLY_RELOAD_KEY) === dateKey) return false;
+  if (sessionStartedAtMs > 0) {
+    const startParts = zonedParts(new Date(sessionStartedAtMs), config.timeZone);
+    const startedAfterTarget = startParts.hour * 60 + startParts.minute >= targetMinutes;
+    if (ymdKey(startParts) === dateKey && startedAfterTarget) {
+      writeStoredItem(NIGHTLY_RELOAD_KEY, dateKey);
+      return false;
+    }
+  }
+  writeStoredItem(NIGHTLY_RELOAD_KEY, dateKey);
   return requestSupervisedReload("nightly", now.getTime(), false);
 }
 

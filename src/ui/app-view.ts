@@ -151,14 +151,6 @@ export class AppView {
     }
   }
 
-  updateStatus(): void {
-    if (!this.state) return;
-    const timeZone = this.state.data.settings.timeZone || this.config.timeZone;
-    this.statusBar.update({ state: this.state, config: this.config, timeZone });
-    this.staleBanner.update({ data: this.state.data, nowMs: Date.now() });
-    this.marketSummary.update(this.state.data);
-  }
-
   updateDebug(): void {
     if (!this.state) return;
     const timeZone = this.state.data.settings.timeZone || this.config.timeZone;
@@ -186,6 +178,7 @@ export class AppView {
     this.electricity.destroy();
     this.fuel.destroy();
     this.euribor.destroy();
+    this.marketSummary.destroy();
     this.statusBar.destroy();
     this.staleBanner.destroy();
     this.clock.destroy();

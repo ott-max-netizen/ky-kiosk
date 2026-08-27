@@ -71,12 +71,29 @@ function validateSettings(value: unknown): Settings | null {
   return result;
 }
 
+/**
+ * Tuletab id-ta teatele stabiilse id. Varem kasutati `crypto.randomUUID()`, mis
+ * andis igal valideerimisel uue id, nii et `NoticesPanel` kaotas iga
+ * sünkroonimise järel oma koha rotatsioonis ja hüppas tagasi esimesele leheküljele.
+ */
+function derivedNoticeId(title: string, body: string): string {
+  let hash = 2166136261;
+  const source = `${title}\u0000${body}`;
+  for (let index = 0; index < source.length; index += 1) {
+    hash ^= source.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return `n${(hash >>> 0).toString(36)}`;
+}
+
 function validateNotice(value: unknown): Notice | null {
   if (!isRecord(value)) return null;
+  const title = clampText(value.title, 300) || "Info";
+  const body = clampText(value.body, MAX_BODY);
   return {
-    id: clampText(value.id, 100) || crypto.randomUUID(),
-    title: clampText(value.title, 300) || "Info",
-    body: clampText(value.body, MAX_BODY),
+    id: clampText(value.id, 100) || derivedNoticeId(title, body),
+    title,
+    body,
     type: ["info", "warning", "danger", "success"].includes(String(value.type)) ? String(value.type) : "info",
     priority: finite(value.priority) ?? 100,
     start: isoOrNull(value.start),
@@ -362,9 +379,66 @@ export function validateDashboardPayload(input: unknown): ValidationResult<Incom
   return { value: output, problems };
 }
 
+function textRecord<T extends string>(value: unknown, max: number): Partial<Record<T, string>> {
+  if (!isRecord(value)) return {};
+  const result: Partial<Record<T, string>> = {};
+  for (const name of SECTION_NAMES) {
+    const text = clampText(value[name], max);
+    if (text) result[name as T] = text;
+  }
+  return result;
+}
+
+function warningRecord(value: unknown): Partial<Record<SectionName, string[]>> {
+  if (!isRecord(value)) return {};
+  const result: Partial<Record<SectionName, string[]>> = {};
+  for (const name of SECTION_NAMES) {
+    const raw = value[name];
+    if (!Array.isArray(raw)) continue;
+    const warnings = raw.map((item) => clampText(item, 500)).filter(Boolean).slice(0, 20);
+    if (warnings.length) result[name] = warnings;
+  }
+  return result;
+}
+
+/**
+ * Valideerib IndexedDB-st loetud hetktõmmise. See on ainus andmetee, mis elab üle
+ * brauseri taaskäivituse, ja seetõttu ka ainus, mille sisu ei ole kunagi nähtud
+ * `validateDashboardPayload`-i poolt enne salvestamist — vahemälu võib olla
+ * kirjutatud vanema versiooni poolt, poolikult või rikutud.
+ *
+ * Varem valideeriti siin sisend ära ja tagastati siis ikkagi valideerimata
+ * toorobjekt, nii et kogu kontroll oli sisuliselt olematu: vigane vahemälu
+ * jõudis otse paneelidesse, viskas esimesel renderdusel erindi ja jättis kioski
+ * tühjale ekraanile ilma uue sünkroonimiskatseta.
+ */
 export function validateCachedDashboard(input: unknown): DashboardData | null {
-  if (!isRecord(input)) return null;
+  if (!isRecord(input) || Array.isArray(input)) return null;
   const validated = validateDashboardPayload(input);
-  if (!validated.value) return null;
-  return input as unknown as DashboardData;
+  const payload = validated.value;
+  if (!payload) return null;
+  return {
+    ok: true,
+    updatedAt: payload.updatedAt,
+    ...(typeof input.cachedAt === "string" ? { cachedAt: clampText(input.cachedAt, 40) } : {}),
+    settings: payload.settings ?? validateSettings({}) ?? {
+      buildingName: "KÜ Kauge 32 infoekraan",
+      buildingAddress: "",
+      weatherLocation: "Viljandi",
+      timeZone: "Europe/Tallinn",
+    },
+    sections: payload.sections,
+    sectionUpdatedAt: textRecord(input.sectionUpdatedAt, 40),
+    sectionErrors: textRecord(input.sectionErrors, 500),
+    sectionWarnings: warningRecord(input.sectionWarnings),
+    notices: payload.notices ?? [],
+    contacts: payload.contacts ?? [],
+    emergency: payload.emergency ?? [],
+    waste: payload.waste ?? [],
+    weather: payload.weather ?? null,
+    house: payload.house ?? null,
+    electricity: payload.electricity ?? null,
+    fuel: payload.fuel ?? null,
+    euribor: payload.euribor ?? null,
+  };
 }

@@ -1,6 +1,6 @@
 import type { DashboardData } from "../../data/types";
 import { EuriborChart } from "../charts/euribor-chart";
-import { clearElement, createElement, formatNumber, requireElement, setText } from "../dom";
+import { createElement, formatNumber, requireElement, setText } from "../dom";
 import { formatDateValue, sectionUpdatedTime } from "./helpers";
 import type { Panel } from "./panel";
 
