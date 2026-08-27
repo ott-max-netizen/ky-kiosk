@@ -73,3 +73,67 @@ Need piirangud ei mõjuta kaasasoleva valmis `dist/` kausta kasutamist, kuid enn
 4.2.0 muudab tüpograafiat teadlikult, seega 4.0.0 PNG-baseline'e ei tohi käsitleda 4.2.0 tõendusena. Käesolevas teostuskeskkonnas blokeerib Chromium URL-id halduspoliitikaga `URLBlocklist: ["*"]`, mistõttu uut 1920 × 1080 renderdust ei saanud siin usaldusväärselt genereerida.
 
 `tests/e2e/snapshots/build-version.txt` jääb seetõttu ausalt väärtusele `4.0.0`, kuni käsuga `npm run test:visual:update` on päris Playwrighti baseline'id edukalt uuendatud. Tavaline `npm run preflight` **peab** seni versioonierinevuse tõttu läbi kukkuma. Ainult mittevisuaalse diagnostika jaoks saab kasutada `KU_ALLOW_STALE_VISUAL_BASELINE=1 npm run preflight`; seda ei tohi käsitleda release-värava läbimisena.
+
+## 4.3.0 mõõtmised (päris Chromium, täielik tööriistaahel)
+
+Erinevalt 4.0.0 ja 4.2.0 auditist oli selles keskkonnas npm registri ligipääs ja
+töötav Chromium olemas, seega sai esimest korda käivitada kõik päris
+kvaliteedivärava sammud ja päris brauserimõõtmised.
+
+Kordamiseks: `npm run build && node tools/measure.mjs --hours 24`. Kiirendatud
+kell (Playwright `page.clock`), demorežiim, 1920 × 1080, device scale 1,
+`Europe/Tallinn`, fikseeritud algus 25.08.2026 16:00.
+
+| Mõõdik | 4.2.0 | 4.3.0 | Muutus |
+|---|---:|---:|---:|
+| JS bundle | 76 790 B | 82 245 B | +7,1% |
+| JS bundle gzip | 24 627 B | 26 176 B | +6,3% |
+| CSS bundle | 27 250 B | 27 280 B | +0,1% |
+| CSS bundle gzip | 6 122 B | 6 126 B | +0,1% |
+| `index.html` | 9 035 B | 9 035 B | 0 |
+| Esimene täisrenderdus | 204 ms | 183 ms | −10,3% |
+| DOM-sõlmi käivitusel | 398 | 398 | 0 |
+| SVG-sõlmi käivitusel | 52 | 52 | 0 |
+| DOM-sõlmi 24 h pärast | 397 | 398 | stabiilne |
+| Loodud HTML-elemente 24 h | 345 604 | 266 | −99,92% |
+| Loodud SVG-elemente 24 h | 43 252 | 64 | −99,85% |
+| Sunnitud reflow'sid 24 h | 24 | 24 | 0 |
+| `addEventListener` kokku | 23 | 23 | 0 |
+| JS-kuhi käivitusel | 2 601 340 B | 2 604 820 B | +0,1% |
+| JS-kuhi 24 h pärast | 2 962 680 B | 2 283 148 B | −22,9% |
+| Vite build | 201 ms | 178 ms | mõõtemüra piires |
+
+Bundle kasvas teadlikult: lepitaja, vahemälu valideerimine, ajastaja tugevdamine
+ja usutavuskontrollid on lisakood. Otsustusjärjekorra (õigsus > töökindlus >
+hooldatavus > jõudlus > bundle) järgi on 1,5 KiB gzip vastuvõetav hind.
+
+Kõige olulisem number on elementide loomine: 4.2.0 lõi ööpäevas ligi 350 000
+elementi, et kuvada 398-sõlmelist DOM-i, sest iga roteeruv paneel lammutas ja
+ehitas oma alampuu uuesti. 4.3.0 loob esimese tunni järel praktiliselt mitte
+ühtegi. Ükski neist ei olnud leke — DOM-i suurus oli mõlemal juhul stabiilne —
+kuid nädalaid järjest töötaval masinal on see puhas eraldamise ja prügikoristuse
+koormus.
+
+### Pika sessiooni kontroll
+
+24 h kiirendatud sessiooni jooksul: taimerid ei kasva (üks jagatud
+`setInterval`), kuulajad ei kasva (23, kõik lehe elueaga), DOM ei kasva,
+rotatsioon jääb tööle, ajastaja jääb tööle. 7 päeva mõõdeti loogilise ajaga
+`tests/integration/longrun.spec.ts` kaudu, mitte brauseris — see on ausalt
+märgitud allpool.
+
+### Mida selles keskkonnas EI saanud tõendada
+
+- **Visuaalne regressioon commit'itud baseline'ide vastu: BLOCKED.**
+  `tests/e2e/snapshots/*.png` on versioonist 4.0.0 ja need näitavad veel vana
+  nelja kuu maja-paneeli, mis asendati 4.1.0-s kolme vaatega. Need ei saa 4.2.0
+  ega 4.3.0 vastu kunagi läbi minna. Lisaks erineb selle konteineri fondistack
+  baseline'i loonud masinast (~9% pikslitest, ainult teksti rasterdus; kastid ja
+  graafikud kattusid täpselt).
+- **Mida siiski tõendati:** refaktooring ei muutnud renderdust. Kuus 1920 × 1080
+  fixture'it renderdati eelmise commit'i koodiga *samas keskkonnas*, salvestati
+  baseline'iks ja uus kood võrreldi nende vastu — kõik 7 Playwright testi
+  läbisid pikslitäpselt.
+- **Windowsi kiosk, PowerShell, Task Scheduler, Apps Scripti runtime:** Linuxi
+  konteineris ei saa käivitada; muutmata jäetud, käsitestid on runbookis.
+- **7 päeva päris brauserimälu profileerimine:** ei ole automatiseeritud.

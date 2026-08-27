@@ -1,4 +1,4 @@
-# KÜ infoekraan 4.2.0
+# KÜ infoekraan 4.3.0
 
 Windowsi ja Microsoft Edge'i kioskirežiimis töötav korteriühistu infoekraan 27-tollisele 1920 × 1080 ekraanile. Kasutajaliides on eesti keeles, ajavöönd on `Europe/Tallinn` ja kogu staatiline rakendus töötab kohalikust veebiserverist ka internetiühenduseta.
 
@@ -62,6 +62,22 @@ npm run preflight
 ```
 
 Varuehitus ei asenda Vite kvaliteediväravat, kuid võimaldab genereerida ja kontrollida kioskisse paigaldatavat `dist/` kausta ka siis, kui npm registrile puudub ligipääs.
+
+## Jõudluse mõõtmine
+
+```bash
+npm run build
+node tools/measure.mjs --hours 24
+```
+
+Käivitab rakenduse päris Chromiumis 1920 × 1080 juures kiirendatud kellaga ja
+raporteerib bundle'i mahud, esimese täisrenderduse aja, DOM- ja SVG-sõlmede arvu,
+loodud elementide arvu, sunnitud reflow'd, kuulajad ja JS-kuhja. `--json fail.json`
+salvestab tooranded. Kui brauser on juba masinas olemas, saab selle ette anda
+muutujaga `PLAYWRIGHT_CHROMIUM_EXECUTABLE`; sama muutuja kehtib ka
+`npm run test:visual` jaoks.
+
+Mõõdetud tulemused on `docs/baseline.md` failis.
 
 ## Runtime-config
 

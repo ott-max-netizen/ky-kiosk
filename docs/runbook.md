@@ -51,6 +51,26 @@ npm run test:sources   # internetiga release-smoke
 npm run build
 ```
 
+> **4.3.0 seis:** `npm run check` lõpeb praegu ainsa veaga preflightis —
+> `tests/e2e/snapshots/build-version.txt` on `4.0.0`, projekt `4.3.0`. Baseline'id
+> pärinevad versioonist 4.0.0 ja näitavad veel vana nelja kuu maja-paneeli, mille
+> 4.1.0 asendas kolme vaatega, seega ei saa need ühegi praeguse buildi vastu läbi
+> minna. Enne release'i tuleb need kioskiga sarnasel masinal käsuga
+> `npm run test:visual:update` uuendada ja silmaga üle vaadata. Kõik ülejäänud 125
+> preflighti kontrolli läbivad.
+
+Jõudluse kontrollmõõtmine päris brauseris (valikuline, aga soovituslik enne
+release'i, et avastada paneelide DOM-i taasehitamise regressioon):
+
+```bash
+npm run build
+node tools/measure.mjs --hours 24
+```
+
+Kui „HTML elements created in 24 h“ tõuseb sadadelt tuhandetesse, on mõni paneel
+naasnud iga tiksu peale alampuu uuesti ehitamise juurde. Mõõdetud võrdlusarvud on
+`docs/baseline.md` failis.
+
 2. Tee kioskimasinas varukoopia:
 
 ```powershell
