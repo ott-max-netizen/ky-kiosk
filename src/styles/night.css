@@ -1,0 +1,123 @@
+html[data-theme="night"] {
+  --bg: #10151b;
+  --panel: #18212a;
+  --text: #d4dce2;
+  --muted: #a9b7c2;
+  --line: #506170;
+  --brand: #e8f1f7;
+  --accent: #8fc4e8;
+  --accent-soft: #233747;
+  --success: #7dd3aa;
+  --warning: #ffd27a;
+  --warning-bg: #3d2f13;
+  --danger: #ff8f8f;
+  --danger-soft: #412326;
+  --shadow: none;
+  color-scheme: dark;
+}
+html[data-theme="night"] .shell {
+  background: #10151b;
+}
+html[data-theme="night"] .notice-card {
+  background: #203240;
+  border-color: #506170;
+}
+html[data-theme="night"] .notice-card[data-type="warning"] {
+  background: #3b311d;
+  border-color: #806b38;
+}
+html[data-theme="night"] .notice-card[data-type="danger"] {
+  background: var(--danger-soft);
+  border-color: #865156;
+}
+html[data-theme="night"] .notice-card[data-type="success"] {
+  background: #1d382d;
+  border-color: #47745f;
+}
+html[data-theme="night"] .weather-stat,
+html[data-theme="night"] .forecast-day,
+html[data-theme="night"] .bus-departure {
+  background: #3e3228;
+}
+html[data-theme="night"] .bus-departure {
+  border-color: #7f6854;
+}
+html[data-theme="night"] .bus-line {
+  background: #d8b08d;
+  color: #2a2018;
+}
+html[data-theme="night"] .bus-departure-day {
+  background: #5a493d;
+  color: #f6ede2;
+}
+html[data-theme="night"] .bus-departure-day.is-today {
+  background: #495b31;
+  color: #edf6dd;
+}
+html[data-theme="night"] .bus-departure-day.is-tomorrow {
+  background: #7a5f24;
+  color: #fff4d1;
+}
+html[data-theme="night"] .bus-departure-day.is-future {
+  background: #645243;
+  color: #f6ede2;
+}
+html[data-theme="night"] .waste-track {
+  background: #24313b;
+  border-color: #506170;
+}
+html[data-theme="night"] .waste-marker {
+  background: #e8f1f7;
+}
+html[data-theme="night"] .stale-banner {
+  color: #fff1cd;
+}
+html[data-theme="night"] .section-stale {
+  color: #fff1cd;
+  background: #3d2f13;
+}
+
+html[data-theme="night"] .market-card {
+  background: #322922;
+  border-color: #705e4f;
+}
+html[data-theme="night"] .electricity-card {
+  background: linear-gradient(180deg, #422d2a, #322922);
+}
+html[data-theme="night"] .fuel-card {
+  background: linear-gradient(180deg, #233d39, #322922);
+}
+html[data-theme="night"] .euribor-card {
+  background: linear-gradient(180deg, #403b24, #322922);
+}
+html[data-theme="night"] .market-meta,
+html[data-theme="night"] .market-card-source,
+html[data-theme="night"] .market-public-label,
+html[data-theme="night"] .market-stat span,
+html[data-theme="night"] .market-chart-label {
+  color: #d7c8b8;
+  fill: #d7c8b8;
+}
+html[data-theme="night"] .market-grid-line {
+  stroke: #665749;
+}
+html[data-theme="night"] .market-zero-line {
+  stroke: #b5a18d;
+}
+html[data-theme="night"] .market-electric-bar.is-current {
+  fill: #efaa9e;
+}
+html[data-theme="night"] .market-fuel-row {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: #4f9d94;
+}
+html[data-theme="night"] .market-fuel-kind {
+  color: #8bd0c7;
+}
+html[data-theme="night"] .euribor-current {
+  color: #e4d552;
+}
+html[data-theme="night"] .house-bar-slot {
+  background: rgba(255, 255, 255, 0.04);
+  border-bottom-color: #6f6256;
+}

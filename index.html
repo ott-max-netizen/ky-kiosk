@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="et">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f3ede5">
+  <title>KÜ Kauge 32 infoekraan</title>
+</head>
+<body>
+  <div id="appShell" class="shell">
+    <header class="topbar">
+      <div class="identity">
+        <div class="eyebrow">KORTERIÜHISTU INFOEKRAAN</div>
+        <h1 id="buildingName">KÜ Kauge 32 infoekraan</h1>
+        <div id="buildingAddress" class="address"></div>
+      </div>
+      <div class="clock-block" aria-label="Kell ja kuupäev">
+        <div id="clock" class="clock numeric">--:--</div>
+        <div id="date" class="date numeric">--</div>
+      </div>
+    </header>
+
+    <div id="staleBanner" class="stale-banner" hidden role="status">
+      <strong>Andmed võivad olla vananenud.</strong>
+      <span id="staleBannerText"></span>
+    </div>
+
+    <main id="dashboard" class="dashboard has-notices">
+      <section id="infoPanel" class="panel info-panel" aria-label="Info ja turunäitajad">
+        <div class="panel-head info-panel-head">
+          <div id="infoSectionKicker" class="section-kicker">INFO JA TURUNÄITAJAD</div>
+          <div class="info-head-side">
+            <div id="noticePager" class="pager" aria-live="polite"></div>
+          </div>
+        </div>
+        <div class="info-content">
+          <div id="noticeColumn" class="notice-column">
+            <div id="noticePageLabel" class="page-label numeric" hidden></div>
+            <div id="noticeArea" class="notice-area" aria-live="polite"></div>
+          </div>
+          <div class="market-column">
+            <div class="subsection-row market-column-head">
+              <div class="subsection-label">TURUNÄITAJAD</div>
+              <div class="market-column-meta">
+                <div class="market-public-label">avalikud andmed + KÜ tariifid</div>
+                <div id="marketStale" class="market-stale-summary" hidden></div>
+              </div>
+            </div>
+            <div id="marketArea" class="market-grid" aria-live="polite">
+              <article id="electricityCard" class="market-card electricity-card">
+                <div class="market-card-head">
+                  <div>
+                    <div class="market-title">Elektri ostuhind</div>
+                    <div id="electricityMeta" class="market-meta numeric">Täna · s/kWh · KM 24%</div>
+                  </div>
+                  <div class="market-current">
+                    <strong id="electricityNow" class="market-value numeric">–</strong>
+                    <span>praegu</span>
+                  </div>
+                </div>
+                <div id="electricityStale" class="market-stale" hidden></div>
+                <div id="electricityChart" class="market-chart electricity-chart"></div>
+                <div id="electricityStats" class="market-stats numeric"></div>
+                <div id="electricitySource" class="market-card-source">Elering + Elekter · muutuvtasud · püsitasudeta</div>
+              </article>
+
+              <article id="fuelCard" class="market-card fuel-card">
+                <div class="market-card-head">
+                  <div>
+                    <div class="market-title">Kütusehind</div>
+                    <div id="fuelMeta" class="market-meta numeric">Eesti keskmine</div>
+                  </div>
+                  <div id="fuelStale" class="market-stale" hidden></div>
+                </div>
+                <div id="fuelValues" class="fuel-values numeric"></div>
+                <div id="fuelSource" class="market-card-source">OpenVan.camp · Eesti nädala keskmine</div>
+              </article>
+
+              <article id="euriborCard" class="market-card euribor-card">
+                <div class="market-card-head">
+                  <div>
+                    <div class="market-title">6 kuu Euribor</div>
+                    <div id="euriborMeta" class="market-meta numeric">Viimased 6 kuud</div>
+                  </div>
+                  <div id="euriborStale" class="market-stale" hidden></div>
+                </div>
+                <div id="euriborNow" class="market-current euribor-current numeric">–</div>
+                <div id="euriborChart" class="market-chart euribor-chart"></div>
+                <div id="euriborSource" class="market-card-source">Soome Pank · EMMI · 24 h viitega</div>
+              </article>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel bus-panel" aria-labelledby="busHeading">
+        <div class="bus-panel-head">
+          <div>
+            <div class="section-kicker">VÄLJUMISED</div>
+            <h2 id="busHeading">Kauge peatus</h2>
+            <div id="busStopName" class="bus-stop-name">Järgmised bussid</div>
+            <div id="busSourceLabel" class="bus-source-label numeric"></div>
+          </div>
+        </div>
+        <div class="bus-direction" aria-labelledby="busCenterHeading">
+          <div id="busCenterHeading" class="bus-direction-title">Kesklinna suunas</div>
+          <div id="busCenterArea" class="bus-departures numeric"></div>
+        </div>
+        <div class="bus-direction" aria-labelledby="busSuurKaareHeading">
+          <div id="busSuurKaareHeading" class="bus-direction-title">Suur-Kaare suunas</div>
+          <div id="busSuurKaareArea" class="bus-departures numeric"></div>
+        </div>
+      </section>
+
+      <aside class="weather-stack" aria-label="Ilm ja maja tarbimine">
+        <section class="panel weather-panel" aria-labelledby="weatherHeading">
+          <div class="panel-head compact">
+            <h2 id="weatherHeading" class="section-kicker panel-kicker-heading">ILM</h2>
+            <div class="panel-head-meta">
+              <div id="weatherPlace" class="small-label"></div>
+              <div id="weatherStale" class="section-stale" hidden></div>
+            </div>
+          </div>
+          <div id="weatherArea" class="weather-area"></div>
+        </section>
+
+        <section class="panel house-panel" aria-labelledby="houseHeading">
+          <div class="panel-head compact house-panel-head">
+            <div>
+              <div class="section-kicker">MAJA</div>
+              <h2 id="houseHeading">Maja tarbimine</h2>
+            </div>
+            <div class="panel-head-meta house-head-meta">
+              <div id="housePeriod" class="house-period numeric"></div>
+              <div id="houseViewIndicator" class="house-view-indicator" role="status" aria-live="polite"></div>
+              <div id="houseStale" class="section-stale" hidden></div>
+            </div>
+          </div>
+          <div id="houseArea" class="house-area"></div>
+        </section>
+      </aside>
+
+      <section class="panel waste-panel" aria-labelledby="wasteHeading">
+        <div class="panel-head compact">
+          <div>
+            <div class="section-kicker">PRÜGIVEDU</div>
+            <h2 id="wasteHeading">Järgmised veod</h2>
+          </div>
+          <div class="panel-head-meta">
+            <div class="small-label numeric"><span id="wasteWindowLabel">30</span> päeva vaade</div>
+            <div id="wastePageLabel" class="page-label numeric"></div>
+          </div>
+        </div>
+        <div id="wasteChart" class="waste-chart"></div>
+      </section>
+
+      <aside class="side-stack" aria-label="Kontaktid">
+        <section class="panel contacts-panel" aria-labelledby="contactsHeading">
+          <div class="panel-head compact">
+            <div>
+              <div class="section-kicker">KONTAKTID</div>
+              <h2 id="contactsHeading">KÜ kontaktid</h2>
+            </div>
+            <div id="contactsPageLabel" class="page-label numeric"></div>
+          </div>
+          <div id="contactsArea" class="contacts-area"></div>
+        </section>
+
+        <section class="panel emergency-panel" aria-labelledby="emergencyHeading">
+          <div class="panel-head compact">
+            <div>
+              <div class="section-kicker">KONTAKTID</div>
+              <h2 id="emergencyHeading">Olulised kontaktid</h2>
+            </div>
+            <div id="emergencyPageLabel" class="page-label numeric"></div>
+          </div>
+          <div id="emergencyArea" class="emergency-area"></div>
+        </section>
+      </aside>
+    </main>
+
+    <footer class="statusbar">
+      <div class="status-left">
+        <span id="connectionDot" class="connection-dot"></span>
+        <span id="connectionText">Kontrollin ühendust…</span>
+      </div>
+      <div class="status-right numeric">
+        <span id="lastUpdated">Andmeid pole veel sünkroonitud</span>
+        <span class="status-separator">•</span>
+        <span id="buildLabel">v–</span>
+      </div>
+    </footer>
+  </div>
+
+  <aside id="debugOverlay" class="debug-overlay numeric" hidden aria-live="polite"></aside>
+
+  <script src="%BASE_URL%config.js"></script>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

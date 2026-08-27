@@ -1,0 +1,12 @@
+node_modules/
+dist/
+edge-profile/
+*.log
+*.tmp
+playwright-report/
+test-results/
+coverage/
+.DS_Store
+/config.js
+/public/config.js
+test-results/

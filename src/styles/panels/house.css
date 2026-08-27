@@ -1,0 +1,264 @@
+.house-panel {
+  padding-top: 0.52rem;
+  padding-bottom: 0.46rem;
+}
+.house-panel-head {
+  margin-bottom: 0.18rem;
+  align-items: flex-start;
+}
+.house-panel h2 {
+  font-size: var(--fs-b);
+  margin-top: 0.05rem;
+}
+.house-head-meta {
+  gap: 0.12rem;
+  min-width: 6.5rem;
+}
+.house-period {
+  color: var(--text);
+  font-size: var(--fs-c);
+  line-height: 1;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.house-view-indicator {
+  min-height: 0.52rem;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.24rem;
+}
+.house-view-dot {
+  width: 0.3rem;
+  height: 0.3rem;
+  border-radius: 50%;
+  background: var(--line);
+}
+.house-view-dot.is-active {
+  width: 0.72rem;
+  border-radius: 99rem;
+  background: var(--brand);
+}
+.house-area {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  outline: none;
+}
+.house-view {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  font-variant-numeric: tabular-nums;
+}
+.house-view-enter {
+  animation: house-view-fade 320ms ease-out both;
+}
+@keyframes house-view-fade {
+  from {
+    opacity: 0;
+    transform: translateX(0.22rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+.house-empty {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.house-current-view,
+.house-trend-view {
+  display: grid;
+  grid-template-rows: repeat(4, minmax(0, 1fr));
+  gap: 0.08rem;
+}
+.house-kpi-row,
+.house-trend-row,
+.house-year-row {
+  min-width: 0;
+  display: grid;
+  align-items: center;
+}
+.house-kpi-row {
+  grid-template-columns: minmax(4.5rem, 0.92fr) minmax(5.4rem, 1fr) minmax(3.4rem, 0.62fr);
+  gap: 0.26rem;
+  border-bottom: 0.04rem solid color-mix(in srgb, var(--line) 68%, transparent);
+}
+.house-kpi-row:last-child,
+.house-trend-row:last-child,
+.house-year-row:last-child {
+  border-bottom: 0;
+}
+.house-kpi-identity,
+.house-trend-identity,
+.house-year-identity {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.26rem;
+  color: var(--text);
+  font-size: var(--fs-c);
+  line-height: 1;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.house-metric-icon {
+  width: 1.05rem;
+  flex: 0 0 1.05rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
+  font-size: var(--fs-c);
+  line-height: 1;
+}
+.house-kpi-label,
+.house-trend-label,
+.house-year-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.house-kpi-value,
+.house-year-value,
+.house-trend-value {
+  min-width: 0;
+  color: var(--text);
+  font-size: var(--fs-c);
+  line-height: 1;
+  font-weight: 800;
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.house-kpi-change {
+  font-size: var(--fs-c);
+  line-height: 1;
+  font-weight: 800;
+  text-align: right;
+  white-space: nowrap;
+}
+.house-kpi-change.is-positive {
+  color: var(--success);
+}
+.house-kpi-change.is-warning {
+  color: var(--danger);
+}
+.house-kpi-change.is-neutral {
+  color: var(--muted);
+}
+
+.house-trend-row {
+  grid-template-columns: minmax(4.2rem, 0.82fr) minmax(4.6rem, 0.9fr) minmax(4.8rem, 1.18fr);
+  gap: 0.25rem;
+  border-bottom: 0.04rem solid color-mix(in srgb, var(--line) 60%, transparent);
+}
+.house-trend-value {
+  font-size: var(--fs-d);
+}
+.house-sparkline {
+  display: block;
+  width: 100%;
+  height: 1.45rem;
+  overflow: visible;
+  color: currentColor;
+}
+.house-spark-line {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+.house-spark-point,
+.house-spark-last {
+  fill: currentColor;
+}
+.house-spark-last {
+  stroke: var(--panel);
+  stroke-width: 1.2;
+  vector-effect: non-scaling-stroke;
+}
+
+.house-year-view {
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 0.08rem;
+}
+.house-year-heading {
+  color: var(--text);
+  font-size: var(--fs-c);
+  line-height: 1;
+  font-weight: 800;
+}
+.house-year-rows {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: repeat(4, minmax(0, 1fr));
+}
+.house-year-row {
+  grid-template-columns: minmax(5rem, 1fr) minmax(6rem, 1.2fr);
+  gap: 0.35rem;
+  border-bottom: 0.04rem solid color-mix(in srgb, var(--line) 60%, transparent);
+}
+.house-year-value {
+  font-size: var(--fs-c);
+}
+.house-year-meta {
+  color: var(--muted);
+  font-size: var(--fs-d);
+  line-height: 1;
+  font-weight: 700;
+  text-align: right;
+}
+
+.house-water {
+  color: var(--house-water);
+}
+.house-heat {
+  color: var(--house-heat);
+}
+.house-electricity {
+  color: var(--house-electricity);
+}
+.house-solar {
+  color: var(--house-solar);
+}
+.house-kpi-identity.house-water,
+.house-kpi-identity.house-heat,
+.house-kpi-identity.house-electricity,
+.house-kpi-identity.house-solar,
+.house-trend-identity.house-water,
+.house-trend-identity.house-heat,
+.house-trend-identity.house-electricity,
+.house-trend-identity.house-solar,
+.house-year-identity.house-water,
+.house-year-identity.house-heat,
+.house-year-identity.house-electricity,
+.house-year-identity.house-solar {
+  color: var(--text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .house-view-enter {
+    animation: house-view-fade-reduced 180ms linear both;
+  }
+  @keyframes house-view-fade-reduced {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}
