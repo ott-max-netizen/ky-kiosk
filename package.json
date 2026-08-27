@@ -1,0 +1,40 @@
+{
+  "name": "ku-infoekraan",
+  "version": "4.2.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@biomejs/biome": "2.5.10",
+    "@playwright/test": "1.62.1",
+    "@types/node": "^24.0.0",
+    "happy-dom": "20.11.6",
+    "oxlint": "1.80.0",
+    "typescript": "7.0.2",
+    "vite": "8.2.2",
+    "vitest": "4.1.11"
+  },
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "lint": "oxlint src tests tools vite.config.ts vitest.config.ts playwright.config.ts",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:visual": "playwright test",
+    "test:perf": "vitest run tests/dom/performance.spec.ts",
+    "test:longrun": "vitest run tests/integration/longrun.spec.ts",
+    "build": "vite build",
+    "build:fallback": "node tools/build-fallback.mjs",
+    "smoke": "vitest run tests/contract/smoke.spec.ts",
+    "check": "npm run lint && npm run format:check && npm run typecheck && npm run test && npm run build && npm run preflight",
+    "generate:appsscript-domain": "node --experimental-strip-types tools/generate-appsscript-domain.ts",
+    "preflight": "node tools/preflight.mjs",
+    "check:fallback": "npm run build:fallback && npm run preflight",
+    "test:visual:update": "playwright test --update-snapshots && node tools/update-visual-baseline-version.mjs",
+    "test:sources": "node tools/check-market-sources.mjs"
+  }
+}

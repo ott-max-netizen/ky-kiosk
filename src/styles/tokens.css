@@ -1,0 +1,42 @@
+:root {
+  --scale: 0.82;
+
+  /*
+   * Loetavustasemed 1920 px laiuse ja --scale: 0.82 korral.
+   * 1 rem = 16.4 px; pikslisamm 0.3113 mm; versaali kõrgus ~= 0.7 x kirja kõrgus.
+   * A >= 34.4 px / 1.5 m, B >= 23 px / 1.0 m, C >= 17.2 px / 0.75 m, D >= 12.3 px / 0.5 m.
+   */
+  --fs-a: 2.10rem;
+  --fs-b: 1.41rem;
+  --fs-c: 1.05rem;
+  --fs-d: 0.75rem;
+
+  --bg: #f3ede5;
+  --panel: #fffaf4;
+  --text: #2f241c;
+  --muted: #5d4636;
+  --line: #dbcab8;
+  --brand: #7a4d34;
+  --accent: #b99a63;
+  --accent-soft: #f3e7cf;
+  --success: #556b2f;
+  --warning: #8a5a18;
+  --warning-bg: #f8ead0;
+  --danger: #a2554b;
+  --danger-soft: #f7e5e1;
+  --market-electric: #a2554b;
+  --market-fuel: #14766f;
+  --market-rate: #9a8800;
+  --market-grid: #d9cdbf;
+  --house-water: #4f7f97;
+  --house-heat: #a2554b;
+  --house-electricity: #b28a36;
+  --house-solar: #668044;
+  --shadow: 0 0.6rem 1.7rem rgba(82, 58, 37, 0.09);
+  color-scheme: light;
+}
+
+html {
+  /* 20 px @ 1920 px enne --scale rakendamist. */
+  font-size: calc((100vw / 96) * var(--scale));
+}

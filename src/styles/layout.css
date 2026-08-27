@@ -1,0 +1,181 @@
+.dashboard {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(0, 0.68fr) minmax(0, 0.67fr);
+  grid-template-rows: minmax(0, 1.24fr) minmax(0, 0.62fr) 7.6rem;
+  grid-template-areas:
+    "info info weather"
+    "waste contacts emergency"
+    "bus bus bus";
+  gap: 0.65rem;
+}
+.dashboard.no-notices {
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.65fr) minmax(0, 0.90fr);
+  grid-template-rows: minmax(0, 1.28fr) minmax(0, 0.61fr) 7.6rem;
+}
+
+.panel {
+  background: var(--panel);
+  border: 0.06rem solid rgba(16, 35, 63, 0.12);
+  box-shadow: var(--shadow);
+  border-radius: 0.9rem;
+  padding: 0.72rem 0.82rem;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+.info-panel {
+  grid-area: info;
+  border-top: 0.25rem solid var(--accent);
+  padding-top: 0.58rem;
+  display: flex;
+  flex-direction: column;
+}
+.weather-stack {
+  grid-area: weather;
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1.58fr) minmax(0, 0.82fr);
+  gap: 0.65rem;
+}
+.weather-panel,
+.house-panel { min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+.weather-panel { padding-bottom: 0.55rem; }
+.dashboard.no-notices .weather-stack {
+  grid-template-rows: minmax(0, 1.48fr) minmax(0, 0.92fr);
+}
+.bus-panel {
+  grid-area: bus;
+  display: grid;
+  grid-template-columns: 15.5rem minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 0.8rem;
+  padding-top: 0.52rem;
+  padding-bottom: 0.52rem;
+  border-left: 0.25rem solid var(--accent);
+}
+.waste-panel { grid-area: waste; display: flex; flex-direction: column; }
+.side-stack { display: contents; }
+.contacts-panel { grid-area: contacts; min-height: 0; display: flex; flex-direction: column; }
+.emergency-panel { grid-area: emergency; min-height: 0; display: flex; flex-direction: column; }
+
+.panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.65rem;
+  margin-bottom: 0.5rem;
+  min-width: 0;
+}
+.panel-head.compact { margin-bottom: 0.45rem; }
+.panel h2 {
+  margin: 0.12rem 0 0;
+  font-size: 1.70rem;
+  line-height: 1.02;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+}
+.panel h2.panel-kicker-heading {
+  margin: 0;
+  font-size: var(--fs-c);
+  line-height: 1.05;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--brand);
+}
+.panel h2.panel-kicker-heading.danger { color: var(--danger); }
+.panel-head-meta,
+.info-head-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.18rem;
+  min-width: 0;
+}
+.small-label,
+.page-label,
+.section-stale {
+  color: var(--muted);
+  font-size: var(--fs-c);
+  line-height: 1.12;
+  font-weight: 600;
+  text-align: right;
+}
+.section-stale {
+  color: #6b4300;
+  background: #fff0c9;
+  padding: 0.16rem 0.34rem;
+  border-radius: 0.3rem;
+}
+.section-stale[hidden] { display: none; }
+.notice-column > .page-label[hidden] { display: none; }
+.danger { color: var(--danger); }
+
+.info-panel-head { margin-bottom: 0.28rem; }
+.info-content {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1.48fr) minmax(23rem, 0.92fr);
+  gap: 0.7rem;
+}
+.dashboard.no-notices .info-panel-head {
+  display: none;
+}
+.dashboard.no-notices .info-content {
+  grid-template-columns: minmax(0, 1fr);
+}
+.dashboard.no-notices .notice-column,
+.notice-column[hidden] {
+  display: none;
+}
+.dashboard.no-notices .market-column {
+  padding-left: 0;
+  border-left: 0;
+}
+.notice-column,
+.market-column {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.market-column {
+  padding-left: 0.7rem;
+  border-left: 0.06rem solid var(--line);
+}
+.subsection-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 0.32rem;
+}
+.subsection-label { color: var(--text); }
+@media (prefers-reduced-motion: reduce) {
+  .shell { transition: none; }
+}
+
+/* Hooldusvaade väiksemas brauseriaknas; kioskis kasutatakse 1920x1080 paigutust. */
+@media (max-width: 1250px) {
+  html { font-size: max(16px, calc((100vw / 72) * var(--scale))); }
+  body { overflow: auto; cursor: default; }
+  .shell { height: auto; min-height: 100vh; }
+  .dashboard,
+  .dashboard.no-notices {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto;
+    grid-template-areas: "info info" "weather waste" "contacts emergency" "bus bus";
+  }
+  .weather-stack,
+  .dashboard.no-notices .weather-stack { grid-template-rows: auto auto; }
+  .bus-panel {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+  .bus-direction { padding-left: 0; padding-top: 0.5rem; border-left: 0; border-top: 0.06rem solid var(--line); }
+  .info-content { grid-template-columns: 1fr; }
+  .market-column { padding-left: 0; padding-top: 0.7rem; border-left: 0; border-top: 0.06rem solid var(--line); }
+}

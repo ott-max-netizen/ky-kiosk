@@ -1,0 +1,137 @@
+.bus-panel-head {
+  min-width: 0;
+  align-self: center;
+}
+.bus-panel-head h2 {
+  margin-top: 0.08rem;
+}
+.bus-stop-name {
+  margin-top: 0.18rem;
+  font-size: var(--fs-b);
+  line-height: 1.02;
+  font-weight: 700;
+  color: var(--muted);
+}
+.bus-source-label {
+  margin-top: 0.18rem;
+  color: var(--text);
+  font-size: 0.95rem;
+  line-height: 1.05;
+  font-weight: 600;
+}
+.bus-source-label.is-warning {
+  display: inline-block;
+  padding: 0.16rem 0.32rem;
+  border-radius: 0.35rem;
+  background: var(--warning-bg);
+  color: var(--warning);
+  font-weight: 800;
+}
+.bus-direction {
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.28rem;
+  padding-left: 0.8rem;
+  border-left: 0.06rem solid var(--line);
+}
+.bus-direction-title {
+  font-size: 1.15rem;
+  line-height: 1.05;
+  font-weight: 800;
+  color: var(--text);
+}
+.bus-departures {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.42rem;
+}
+.bus-departure {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  grid-template-areas:
+    "time line day"
+    "time line relative";
+  align-items: center;
+  column-gap: 0.42rem;
+  row-gap: 0.02rem;
+  padding: 0.34rem 0.48rem;
+  border-radius: 0.55rem;
+  background: #f8f0e5;
+  border: 0.06rem solid #d8c2a4;
+}
+.bus-departure-day {
+  grid-area: day;
+  justify-self: end;
+  padding: 0.18rem 0.36rem;
+  border-radius: 999rem;
+  font-size: var(--fs-c);
+  line-height: 1;
+  font-weight: 800;
+  color: var(--text);
+  text-align: right;
+  white-space: nowrap;
+  background: #eadfce;
+}
+.bus-departure-day.is-today {
+  background: #e7f1dd;
+  color: #385523;
+}
+.bus-departure-day.is-tomorrow {
+  background: #f5e7b6;
+  color: #7a5613;
+}
+.bus-departure-day.is-future {
+  background: #efe5d9;
+  color: #5d4636;
+}
+.bus-departure-time {
+  grid-area: time;
+  font-size: 2rem;
+  line-height: 0.92;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  white-space: nowrap;
+}
+.bus-line {
+  grid-area: line;
+  min-width: 3.4rem;
+  padding: 0.2rem 0.34rem;
+  border-radius: 0.42rem;
+  background: var(--danger);
+  color: #fffaf4;
+  text-align: center;
+  font-size: 1.05rem;
+  line-height: 1;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.bus-relative {
+  grid-area: relative;
+  min-width: 0;
+  color: var(--text);
+  font-size: var(--fs-b);
+  line-height: 1.05;
+  font-weight: 800;
+  text-align: right;
+  white-space: nowrap;
+  overflow: visible;
+}
+.bus-empty {
+  grid-column: 1 / -1;
+  min-height: 3.2rem;
+  display: flex;
+  align-items: center;
+  padding: 0.35rem 0.5rem;
+  border: 0.06rem dashed #9cadbc;
+  border-radius: 0.5rem;
+  color: var(--text);
+  font-size: var(--fs-b);
+  line-height: 1.1;
+  font-weight: 600;
+}
+

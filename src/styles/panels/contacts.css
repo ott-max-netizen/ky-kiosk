@@ -1,0 +1,81 @@
+.contacts-panel,
+.emergency-panel {
+  padding-left: 0.68rem;
+  padding-right: 0.68rem;
+}
+.contacts-panel h2,
+.emergency-panel h2 {
+  font-size: 1.55rem;
+}
+.contacts-area,
+.emergency-area {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.13rem;
+}
+.contact-card {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.32rem;
+  align-items: center;
+  padding: 0.10rem 0.32rem;
+  border: 0.06rem solid var(--line);
+  border-left: 0.18rem solid var(--accent);
+  border-radius: 0.48rem;
+  background: rgba(255, 255, 255, 0.48);
+}
+.contact-card-important {
+  border-left-color: var(--danger);
+  background: #fbefeb;
+}
+.contact-copy {
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 0.28rem;
+  overflow: hidden;
+}
+.contact-primary {
+  font-weight: 800;
+  font-size: var(--fs-b);
+  line-height: 1;
+  white-space: nowrap;
+}
+.contact-secondary {
+  min-width: 0;
+  margin-top: 0;
+  color: var(--muted);
+  font-size: var(--fs-c);
+  line-height: 1.02;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.contact-phone {
+  min-width: 0;
+  white-space: nowrap;
+  color: var(--text);
+  font-size: var(--fs-b);
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: 0.005em;
+}
+.contact-card-important .contact-phone { color: var(--danger); }
+
+
+.contact-card-emergency-primary {
+  border-left-width: 0.28rem;
+  border-left-color: var(--danger);
+  background: var(--danger-soft);
+}
+.contact-card-emergency-primary .contact-phone {
+  color: var(--danger);
+  font-size: var(--fs-a);
+  line-height: 0.95;
+  font-weight: 800;
+}

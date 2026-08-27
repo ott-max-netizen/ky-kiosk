@@ -1,0 +1,104 @@
+* { box-sizing: border-box; }
+html, body { margin: 0; width: 100%; height: 100%; }
+body {
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Segoe UI", Arial, sans-serif;
+  cursor: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
+}
+
+.numeric,
+.clock,
+.date,
+.phone,
+.weather-temp,
+.weather-stat strong,
+.forecast-day,
+.waste-date,
+.market-value,
+.market-stat-value,
+.statusbar {
+  font-variant-numeric: tabular-nums;
+}
+
+.shell {
+  width: calc(100vw + 4px);
+  height: calc(100vh + 4px);
+  margin: -2px;
+  min-height: 36rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.8rem 1.1rem 0.6rem;
+  background:
+    radial-gradient(circle at 92% 6%, rgba(185, 154, 99, 0.18), transparent 32%),
+    radial-gradient(circle at 10% 18%, rgba(162, 85, 75, 0.09), transparent 28%),
+    linear-gradient(180deg, #faf4ec 0%, #f1e8dc 100%);
+  transition: transform 0.8s ease;
+}
+
+.topbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.4rem;
+  min-width: 0;
+}
+.identity { min-width: 0; }
+.eyebrow,
+.section-kicker,
+.subsection-label {
+  font-size: var(--fs-c);
+  line-height: 1.05;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--brand);
+}
+.identity h1 {
+  margin: 0.12rem 0 0.08rem;
+  font-size: 2.10rem;
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.address {
+  font-size: 1.8rem;
+  line-height: 1.08;
+  font-weight: 600;
+  color: var(--text);
+}
+.clock-block { text-align: right; min-width: 15rem; }
+.clock {
+  font-size: 2.40rem;
+  line-height: 0.92;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+.date {
+  margin-top: 0.35rem;
+  font-size: 1.8rem;
+  line-height: 1.05;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.stale-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-height: 2.25rem;
+  padding: 0.35rem 0.75rem;
+  border: 0.08rem solid #a56b00;
+  border-radius: 0.65rem;
+  background: var(--warning-bg);
+  color: #4d3100;
+  font-size: var(--fs-b);
+  line-height: 1.15;
+  font-weight: 600;
+}
+.stale-banner[hidden] { display: none; }
+
