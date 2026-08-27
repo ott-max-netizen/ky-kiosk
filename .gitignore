@@ -9,3 +9,4 @@ coverage/
 .DS_Store
 /config.js
 /public/config.js
+test-results/

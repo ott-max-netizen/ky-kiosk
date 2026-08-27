@@ -1,22 +1,33 @@
 import assert from "node:assert/strict";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { execFileSync } from "node:child_process";
-import { join } from "node:path";
-import { busDayType, busSchoolSeasonActive } from "../dist/src/domain/bus/day-type.js";
-import { busRelativeLabel, getBusState } from "../dist/src/domain/bus/departures.js";
-import { priceToCentsPerKwh } from "../dist/src/domain/electricity/price.js";
-import { calculatePurchasePriceCentsPerKwh, electricityTariffType } from "../dist/src/domain/electricity/tariff.js";
-import { hasHouseData, lastHouseMonths } from "../dist/src/domain/house/consumption.js";
-import { activeNotices } from "../dist/src/domain/notices/active.js";
-import { isEstonianPublicHoliday } from "../dist/src/domain/time/holidays.js";
-import { addCalendarDays, parseDateOnly } from "../dist/src/domain/time/zoned.js";
-import { parseWasteFrequency } from "../dist/src/domain/waste/frequency.js";
-import { nextWasteByType } from "../dist/src/domain/waste/occurrences.js";
-import { weatherPhenomenonEt } from "../dist/src/domain/weather/phenomenon.js";
-import { BUS_TIMETABLE } from "../dist/src/data/bus-timetable.js";
-import { createFallbackData, createSectionVersions, mergeIncoming } from "../dist/src/data/merge.js";
-import { validateDashboardPayload } from "../dist/src/data/validate.js";
-import { MIN_RUNTIME_SCALE } from "../dist/src/config/config-schema.js";
+import { join, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
+import { buildModules } from "./build-fallback.mjs";
+
+// Preflight kontrollib päris käivitatavat domeeniloogikat. Varem imporditi see
+// otse `dist/src/**`-ist, mida toodab ainult `build:fallback`; pärast `vite build`-i
+// kukkus `npm run check` alati läbi. Nüüd ehitab preflight endale eraldi
+// moodulikoopia ega sõltu sellest, milline build viimasena jooksis.
+const modulesRoot = resolve(import.meta.dirname, "..", "node_modules", ".cache", "ku-preflight");
+buildModules(modulesRoot, { css: false });
+const load = (path) => import(pathToFileURL(join(modulesRoot, "src", path)).href);
+
+const { busDayType, busSchoolSeasonActive } = await load("domain/bus/day-type.js");
+const { busRelativeLabel, getBusState } = await load("domain/bus/departures.js");
+const { priceToCentsPerKwh } = await load("domain/electricity/price.js");
+const { calculatePurchasePriceCentsPerKwh, electricityTariffType } = await load("domain/electricity/tariff.js");
+const { hasHouseData, lastHouseMonths } = await load("domain/house/consumption.js");
+const { activeNotices } = await load("domain/notices/active.js");
+const { isEstonianPublicHoliday } = await load("domain/time/holidays.js");
+const { addCalendarDays, parseDateOnly } = await load("domain/time/zoned.js");
+const { parseWasteFrequency } = await load("domain/waste/frequency.js");
+const { nextWasteByType } = await load("domain/waste/occurrences.js");
+const { weatherPhenomenonEt } = await load("domain/weather/phenomenon.js");
+const { BUS_TIMETABLE } = await load("data/bus-timetable.js");
+const { createFallbackData, createSectionVersions, mergeIncoming } = await load("data/merge.js");
+const { validateDashboardPayload } = await load("data/validate.js");
+const { MIN_RUNTIME_SCALE } = await load("config/config-schema.js");
 
 let assertions = 0;
 function check(condition, message) {

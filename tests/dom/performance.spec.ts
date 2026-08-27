@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 import { describe, expect, it } from "vitest";
 import { ElectricityChart } from "../../src/ui/charts/electricity-chart";
 

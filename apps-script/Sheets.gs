@@ -40,6 +40,12 @@ function monthNumberEt_(value) {
   return isFinite(numeric) && numeric >= 1 && numeric <= 12 ? numeric : null;
 }
 
+// Maja-lehe soojusveerg on ajalooliselt loodud kujul 'Soojusetarbimine MWh'.
+// Aktsepteerime ka õigekeelset 'Soojustarbimine MWh' varianti, et käsitsi
+// parandatud või uuesti loodud tabel ei kaotaks soojusandmeid. Uusi lehti loob
+// setup() endiselt ajaloolise nimega, nii et olemasolevad tabelid ei muutu.
+const HOUSE_HEAT_COLUMNS = ['Soojusetarbimine MWh', 'Soojustarbimine MWh'];
+
 function readHouseConsumptionFromRows_(rows) {
   const monthNames = ['Jaanuar', 'Veebruar', 'Märts', 'Aprill', 'Mai', 'Juuni', 'Juuli', 'August', 'September', 'Oktoober', 'November', 'Detsember'];
   const months = rows.map(function(row) {
@@ -52,7 +58,7 @@ function readHouseConsumptionFromRows_(rows) {
       monthName: monthNames[month - 1],
       key: String(year) + '-' + String(month).padStart(2, '0'),
       waterM3: finiteNumber_(val_(row, 'Veekulu m³')),
-      heatMWh: finiteNumber_(val_(row, 'Soojusetarbimine MWh')),
+      heatMWh: finiteNumber_(valAny_(row, HOUSE_HEAT_COLUMNS)),
       electricityKWh: finiteNumber_(val_(row, 'Elektritarbimine kWh')),
       solarKWh: finiteNumber_(val_(row, 'Päikesepaneelide tootlus kWh'))
     };
@@ -112,6 +118,14 @@ function readSettingsFromRows_(rows) {
 
 function val_(object, key) {
   return object && Object.prototype.hasOwnProperty.call(object, key) ? object[key] : '';
+}
+
+function valAny_(object, keys) {
+  for (let index = 0; index < keys.length; index++) {
+    const key = keys[index];
+    if (object && Object.prototype.hasOwnProperty.call(object, key) && object[key] !== '') return object[key];
+  }
+  return '';
 }
 
 function num_(value, fallback) {
