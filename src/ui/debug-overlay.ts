@@ -1,7 +1,8 @@
 import type { AppState } from "../app/store";
 import type { RuntimeConfig } from "../config/config-schema";
-import { redactSecrets } from "./logger";
-import { requireElement, setHidden, setText } from "../ui/dom";
+import { redactSecrets } from "../diagnostics/logger";
+import { requireElement, setHidden, setText } from "./dom";
+import type { Panel } from "./panels/panel";
 
 export interface DebugSlice {
   state: AppState;
@@ -11,7 +12,7 @@ export interface DebugSlice {
   busDebug: string;
 }
 
-export class DebugOverlay {
+export class DebugOverlay implements Panel<DebugSlice> {
   private element!: HTMLElement;
   private mounted = false;
 

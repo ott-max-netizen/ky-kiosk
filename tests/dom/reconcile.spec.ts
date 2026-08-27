@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 import { beforeEach, describe, expect, it } from "vitest";
+import { requireChildElement } from "../../src/ui/dom";
 import { reconcileChildren, reconcileCount } from "../../src/ui/reconcile";
 import { ContactsPanel } from "../../src/ui/panels/contacts";
 import { EmergencyPanel } from "../../src/ui/panels/emergency";
@@ -21,6 +22,16 @@ function countCreated(run: () => void): number {
   }
   return created;
 }
+
+describe("DOM child helper", () => {
+  it("tagastab olemasoleva lapse ja annab puuduva skeleti korral selge vea", () => {
+    const parent = document.createElement("div");
+    const child = document.createElement("span");
+    parent.appendChild(child);
+    expect(requireChildElement(parent, 0)).toBe(child);
+    expect(() => requireChildElement(parent, 1)).toThrow(/Puuduv DOM-alamelement/);
+  });
+});
 
 describe("reconcileChildren", () => {
   let container: HTMLElement;
@@ -116,7 +127,7 @@ describe("roteeruvad paneelid ei ehita DOM-i uuesti", () => {
     panel.update({ items, pageSize: 5, nowMs: 0, rotationMs: 1_000 });
     const before = document.querySelectorAll("#contactsArea *").length;
     const firstCard = document.querySelector("#contactsArea .contact-card");
-    const created = countCreated(() => panel.tick(5_000));
+    const created = countCreated(() => panel.tick(new Date(5_000)));
     expect(created).toBe(0);
     expect(document.querySelectorAll("#contactsArea *").length).toBe(before);
     expect(document.querySelector("#contactsArea .contact-card")).toBe(firstCard);
@@ -133,7 +144,7 @@ describe("roteeruvad paneelid ei ehita DOM-i uuesti", () => {
     }));
     panel.update({ items, pageSize: 5, nowMs: 0, rotationMs: 1_000 });
     expect(document.querySelector(".contact-card-emergency-primary")).not.toBeNull();
-    const created = countCreated(() => panel.tick(5_000));
+    const created = countCreated(() => panel.tick(new Date(5_000)));
     expect(created).toBe(0);
     // Teisel leheküljel ei ole 112, nii et eriklass peab olema eemaldatud.
     expect(document.querySelector(".contact-card-emergency-primary")).toBeNull();
@@ -156,9 +167,12 @@ describe("roteeruvad paneelid ei ehita DOM-i uuesti", () => {
     panel.update({ data, timeZone: "Europe/Tallinn" });
 
     // Esimene täistsükkel ehitab kõik kolm vaadet ja jätab need alles.
-    for (let step = 1; step <= 3; step += 1) panel.tick(step * 9_000);
+    // Kasutame päris epohhi lähedast baashetke, sest paneel planeerib esimese
+    // vahetuse Date.now() suhtes. 1970-01-01 väärtustega test ei tõestaks rotatsiooni.
+    const base = Date.now();
+    for (let step = 1; step <= 3; step += 1) panel.tick(new Date(base + step * 9_000));
     const created = countCreated(() => {
-      for (let step = 4; step <= 12; step += 1) panel.tick(step * 9_000);
+      for (let step = 4; step <= 12; step += 1) panel.tick(new Date(base + step * 9_000));
     });
     expect(created).toBe(0);
     expect(document.querySelectorAll("#houseArea .house-view")).toHaveLength(1);
@@ -188,8 +202,8 @@ describe("roteeruvad paneelid ei ehita DOM-i uuesti", () => {
       (dot) => dot.classList.contains("is-active"),
     );
     // Ilma pausi ülempiirita jääks rotatsioon siia igaveseks seisma (C-19).
-    panel.tick(Date.now() + 120_000);
-    panel.tick(Date.now() + 140_000);
+    panel.tick(new Date(Date.now() + 120_000));
+    panel.tick(new Date(Date.now() + 140_000));
     const activeAfter = [...document.querySelectorAll("#houseViewIndicator .house-view-dot")].findIndex(
       (dot) => dot.classList.contains("is-active"),
     );

@@ -4,6 +4,7 @@ import { BUS_TIMETABLE } from "../data/bus-timetable";
 import type { SectionVersions } from "../data/types";
 import { busScheduleStatus } from "../domain/bus/schedule-status";
 import { zonedParts } from "../domain/time/zoned";
+import { DebugOverlay } from "./debug-overlay";
 import { requireElement, setHidden, setText } from "./dom";
 import { BusesPanel } from "./panels/buses";
 import { ClockPanel } from "./panels/clock";
@@ -19,7 +20,6 @@ import { StaleBannerPanel } from "./panels/stale-banner";
 import { StatusBarPanel } from "./panels/status-bar";
 import { WastePanel } from "./panels/waste";
 import { WeatherPanel } from "./panels/weather";
-import { DebugOverlay } from "../diagnostics/debug-overlay";
 
 const EMPTY_VERSIONS: SectionVersions = {
   settings: -1,
@@ -167,9 +167,9 @@ export class AppView {
     if (!this.state) return;
     const timeZone = this.state.data.settings.timeZone || this.config.timeZone;
     this.notices.tick(now);
-    this.contacts.tick(now.getTime());
-    this.emergency.tick(now.getTime());
-    this.house.tick(now.getTime());
+    this.contacts.tick(now);
+    this.emergency.tick(now);
+    this.house.tick(now);
     this.waste.tick(now);
     const parts = zonedParts(now, timeZone);
     const minuteKey = `${parts.year}-${parts.month}-${parts.day}-${parts.hour}-${parts.minute}`;

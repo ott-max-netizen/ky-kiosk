@@ -15,6 +15,14 @@ export function createElement<K extends keyof HTMLElementTagNameMap>(
   return element;
 }
 
+export function requireChildElement<T extends HTMLElement = HTMLElement>(parent: Element, index: number): T {
+  const child = parent.children.item(index);
+  if (!(child instanceof HTMLElement)) {
+    throw new Error(`Puuduv DOM-alamelement indeksiga ${index}`);
+  }
+  return child as T;
+}
+
 export function setText(element: HTMLElement, value: string): void {
   if (element.textContent !== value) element.textContent = value;
 }

@@ -1,6 +1,7 @@
 # CLAUDE_CODE_AUDIT — KÜ infoekraan
 
 Audit date: 2026-08-27 · Audited version: 4.2.0 · Delivered version: 4.3.0
+(section 17 addendum covers the 4.4.0 follow-up)
 
 ---
 
@@ -366,7 +367,7 @@ the 24 h accelerated figures and the flat DOM/listener counts are the evidence.
 
 ## 8. Architecture Findings
 
-Measured over `src/` (76 modules):
+Measured over `src/` (54 TypeScript modules, 178 relative imports):
 
 - **Import cycles: none.**
 - **Dependency direction is correct:** `ui → domain` (25), `ui → data` (16),
@@ -744,19 +745,52 @@ reconciler is a good trade.
 4. Run `npm run test:sources` from a machine with internet to confirm the four
    external sources still match their contracted shapes.
 
-### P2
-5. Consider adding `tick` to the `Panel<T>` interface so the rotating-panel
-   lifecycle is expressed in types rather than convention.
-6. Consider a CSP `<meta>` fallback in `index.html`, so the policy holds even if
-   the page is ever served by something other than `local-server.ps1`.
-7. Add `tools/measure.mjs` to CI (or a release checklist) with a threshold on
-   elements-created, so a future rebuild-on-tick regression is caught mechanically.
+### P2 — all DONE in 4.4.0
+5. ~~Consider adding `tick` to the `Panel<T>` interface~~ — done: `tick?(now: Date)`,
+   with contacts, emergency and house switched from `number` to `Date`.
+6. ~~Consider a CSP `<meta>` fallback in `index.html`~~ — done; the PowerShell header
+   remains authoritative and still adds `frame-ancestors 'none'`.
+7. ~~Add `tools/measure.mjs` to CI with a threshold on elements-created~~ — done:
+   `--assert-budgets` and `npm run measure:check`, default 1000 HTML / 200 SVG per 24 h.
 
-### P3
-8. Move `DebugOverlay` from `src/diagnostics/` to `src/ui/` — it is a UI panel and
-   is the only runtime `diagnostics → ui` edge.
-9. Replace the remaining `as unknown as [HTMLElement, ...]` child-tuple casts in
-   the panels with a small typed helper.
+### P3 — all DONE in 4.4.0
+8. ~~Move `DebugOverlay` from `src/diagnostics/` to `src/ui/`~~ — done; the last
+   runtime `diagnostics → ui` edge is gone.
+9. ~~Replace the remaining child-tuple casts~~ — done via `requireChildElement()`.
+   Note: this report said the casts were in `waste`; there were five in total —
+   three in waste, one in buses, one in weather. All replaced.
+
+---
+
+## 17. Addendum — 4.4.0 follow-up
+
+Delivered separately on top of 4.3.0, implementing every P2 and P3 item above.
+Nothing in sections 1–14 changes: no contract, layout, data flow or measured
+number is affected.
+
+**What changed:** the `Panel<T>` lifecycle now includes `tick?(now: Date)` and all
+rotating panels take a `Date`; `DebugOverlay` moved to `src/ui/`; five child-tuple
+casts became `requireChildElement()`; `index.html` carries a CSP `<meta>` fallback;
+`tools/measure.mjs --assert-budgets` turns the 24 h measurement into a release
+gate; `package-lock.json`'s version was realigned with `package.json` (4.3.0 left
+it at 4.2.0 — the new preflight check catches exactly that).
+
+`tools/preflight.mjs` gained eight invariants so these cannot silently regress —
+including "no `as unknown as [HTMLElement` in the UI", "DebugOverlay is not in
+diagnostics", and "the lockfile version matches the project".
+
+**Verified here in a working browser**, which the 4.4.0 development environment
+could not do (its Chromium returned `ERR_BLOCKED_BY_ADMINISTRATOR`):
+
+- Rendering is unchanged — baselines regenerated from the 4.3.0 commit in this
+  environment, all 7 Playwright tests pass pixel-identically.
+- The CSP meta breaks nothing: **0 CSP violations** under both `vite preview` and
+  `vite dev`, notices render in both.
+- `npm run measure:check` passes its 24 h budget.
+- Vitest 128 passed (was 125); preflight 134 checks (was 125).
+
+**Unchanged:** the visual baselines are still from v4.0.0 and are still the only
+release blocker. See section 12.
 
 ---
 
@@ -1111,7 +1145,7 @@ Practical notes for whoever picks this up:
 ```json
 {
   "project": "KÜ infoekraan",
-  "version": "4.3.0",
+  "version": "4.4.0",
   "architecture": "Vanilla TypeScript + Vite, layered app/domain/data/cache/ui/config/diagnostics, Panel<T> component model with in-place DOM reconciliation, single shared scheduler, IndexedDB last-known-good, Google Apps Script backend, Windows Edge kiosk",
   "framework": "none",
   "runtimeDependencies": [],
@@ -1192,11 +1226,11 @@ Practical notes for whoever picks this up:
     "P1: Deploy the updated apps-script/Sheets.gs and confirm the Maja heat column reads on the live spreadsheet.",
     "P1: Run the Windows manual tests in docs/runbook.md against a 4.3.0 build.",
     "P1: Run npm run test:sources from a machine with internet to confirm the four external source shapes.",
-    "P2: Add tick() to the Panel<T> interface so the rotating-panel lifecycle is expressed in types.",
-    "P2: Add a CSP meta fallback to index.html.",
-    "P2: Wire tools/measure.mjs into CI with a threshold on elements-created.",
-    "P3: Move DebugOverlay from src/diagnostics/ to src/ui/.",
-    "P3: Replace the remaining child-tuple casts in the panels with a typed helper."
+    "DONE in 4.4.0 - P2: tick(now: Date) added to Panel<T> and all rotating panels unified.",
+    "DONE in 4.4.0 - P2: CSP meta fallback added to index.html.",
+    "DONE in 4.4.0 - P2: tools/measure.mjs --assert-budgets plus npm run measure:check.",
+    "DONE in 4.4.0 - P3: DebugOverlay moved to src/ui/.",
+    "DONE in 4.4.0 - P3: five child-tuple casts replaced with requireChildElement()."
   ]
 }
 ```

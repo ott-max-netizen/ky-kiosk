@@ -1,3 +1,66 @@
+# KÜ infoekraan 4.4.0 – jätkuarendus 4.3.0 repository põhjal
+
+Aluseks oli kaasas olnud 4.3.0 repository ja selle auditikokkuvõte. Auditit ei
+võetud pimesi tõena: failipuu, sõltuvussuund, paneeliliides, CSP, mõõtetööriist,
+child-cast'id, package-lock ning baseline'i versioon kontrolliti päris koodist.
+Kasutajakäitumise lepinguid C-01..C-37 ega 1920×1080 põhipaigutust ei muudetud.
+
+## Kontrollitud lähteolukord
+
+| Väide / töö | Koodist kinnitatud | 4.4.0 tulemus |
+|---|---|---|
+| Vanilla TypeScript + 0 runtime-sõltuvust | ✅ `package.json` | säilitatud |
+| Importtsüklid puuduvad | ✅ 54 TS faili / 178 suhtelist importi / 0 tsüklit | säilitatud |
+| `Panel<T>` ei kirjeldanud `tick()` elutsüklit | ✅ | lisatud `tick?(now: Date)`; kõik roteeruvad paneelid ühtlustatud |
+| DebugOverlay tekitas `diagnostics -> ui` sõltuvuse | ✅ | kolitud `src/ui/debug-overlay.ts` alla |
+| CSP oli ainult PowerShelli HTTP-päises | ✅ | lisatud `index.html` meta-varuvariant; serveripäis jääb põhiliseks |
+| mõõtetööriist ei saanud eelarve ületamisel ebaõnnestuda | ✅ | `--assert-budgets`, 1000 HTML / 200 SVG vaikimisi |
+| child-tuple topeltcast'e oli alles | ✅ audit alahindas ulatust: 5 kohta (`WastePanel` 3, `BusesPanel` 1, `WeatherPanel` 1) | kõik asendatud `requireChildElement()` kontrolliga |
+| `package-lock.json` versioon oli 4.2.0, projekt 4.3.0 | ✅ | mõlemad 4.4.0 |
+| HousePaneli DOM-test kasutas 1970. aasta timestamp'e | ✅ | test kasutab `Date.now()` baashetke ja tõendab päris rotatsiooni |
+| visuaalbaseline on vana | ✅ `build-version.txt = 4.0.0` | teadlikult muutmata; release-blokeerija |
+
+## Muudetud failid
+
+- `src/ui/panels/panel.ts` – valikuline `tick(now: Date)` on nüüd paneelilepingu osa.
+- `src/ui/panels/{contacts,emergency,house}.ts` – tick kasutab ühtset `Date` sisendit.
+- `src/ui/app-view.ts` – saadab kõigile ajapõhistele paneelidele sama `Date` objekti.
+- `src/ui/dom.ts` – lisatud kontrollitud `requireChildElement()`.
+- `src/ui/panels/{waste,buses,weather}.ts` – eemaldatud kõik viis child-tuple topeltcast'i; auditi loend oli selles punktis mittetäielik.
+- `src/diagnostics/debug-overlay.ts` → `src/ui/debug-overlay.ts` – UI kuulub UI kihti.
+- `index.html` – CSP meta-varuvariant.
+- `tools/measure.mjs` – jõudluseelarve ja mitte-null exit code regressiooni korral.
+- `tools/preflight.mjs` – uued arhitektuuri-, CSP-, lock-faili ja perf-värava kontrollid.
+- `tests/contract/smoke.spec.ts`, `tests/dom/reconcile.spec.ts` – uued regressioonikontrollid.
+- `package.json`, `package-lock.json`, `config.example.js` – 4.4.0 ja `measure:check`.
+- `README.md`, `docs/{contracts,baseline,runbook}.md`, `CHANGELOG.md` – release-protsess ja mõõtepiirid.
+
+## Tõendatud kontrollid selles keskkonnas
+
+- ✅ `src/**/*.ts` range typecheck globaalse TypeScript 5.8.3-ga; 0 viga.
+- ✅ muudetud DOM-testi typecheck minimaalsete Vitest deklaratsioonidega; 0 viga.
+- ✅ smoke-testi typecheck minimaalsete Node/Vitest deklaratsioonidega; 0 viga.
+- ✅ `npm run build:fallback` päris projekti build-skriptiga; selles konteineris seoti registri puudumise tõttu skript ajutiselt olemasoleva TypeScript 5.8.3 CLI-ga, mitte projekti lukustatud 7.0.2 paketiga.
+- ✅ `KU_ALLOW_STALE_VISUAL_BASELINE=1 npm run preflight`: **132 kontrolli**.
+- ✅ genereeritud `dist/**/*.js`, `tools/measure.mjs` ja `tools/preflight.mjs`: `node --check`.
+- ✅ importgraafik: 54 TS faili / 178 suhtelist importi / 0 tsüklit; `domain -> ui/data` rikkumisi 0; `diagnostics -> ui` rikkumisi 0.
+- ✅ lähtekoodis `as unknown as [HTMLElement, ...]` vasteid 0.
+- ⚠️ tavaline `npm run preflight` ebaõnnestub **ainult** baseline'i versiooniväraval: `4.0.0 !== 4.4.0`. Seda ei vaigistatud.
+- ⚠️ `npm ci` ei lõpetanud selles konteineris registri/DNS piirangu tõttu; seega siin ei käivitatud päris Vitest/oxlint/Biome/Vite pakette.
+- ⚠️ `node tools/check-market-sources.mjs` jõudis Eleringi DNS-i ja ebaõnnestus `EAI_AGAIN`; live-source leping jääb internetiga masinale.
+- ⚠️ Chromium tagastab nii `http://127.0.0.1` kui `file://` lehele `ERR_BLOCKED_BY_ADMINISTRATOR`, seega uusi visuaalbaseline'e siin ei genereeritud.
+- ⚠️ Windows PowerShelli, Task Schedulerit ega Apps Scripti live-runtime'i Linuxi konteineris ei testitud.
+
+## Release'i jääktööd
+
+1. Kioskiga võrreldaval Windows/Edge masinal: `npm ci && npm run test:visual:update`; vaata kõik kuus 1920×1080 pilti silmaga üle.
+2. Seejärel: `npm run check && npm run measure:check`.
+3. Internetiga masinal: `npm run test:sources`.
+4. Live Google Sheetil: avalda `apps-script/Sheets.gs` ja kinnita Maja soojusveeru alias.
+5. Windowsis: käi `docs/runbook.md` local-server/watchdog/Task Scheduler käsitestid läbi.
+
+---
+
 # KÜ infoekraan 4.2.0 – loetavuse ja töökindluse parandused
 
 Aluseks oli v4.1.0 paranduste spetsifikatsioon. Iga leid kontrolliti tegelikust moodulkoodist enne muutmist. Põhigridi ei muudetud. Viie kontakti mahutamiseks säilitati kõik B/C fondid, kuid kontaktikaardi nimi, amet/selgitus ja telefon paigutati ühe rea hierarhiaks; kirjeid ei lõigata ära.

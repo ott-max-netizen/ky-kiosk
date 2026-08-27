@@ -57,3 +57,19 @@ Offline unit/contract-testid kontrollivad parserite lähtelepinguid staatiliselt
 1920 × 1080 ja minimaalse runtime skaalaga `0.82` peavad tasemed olema vähemalt: A 34 px, B 23 px, C 17 px, D 12 px. `tools/preflight.mjs` kontrollib tokenid ja kriitilised selektorid. Teate `text-fit` ei tohi minna B-tasemest väiksemaks ning cache on piiratud 32 kirjega.
 
 Bussigraafiku `validUntil` on hoolduslik kontrolltähtaeg, mitte ametliku vedaja avaldatud lõppkuupäev. Selle ületamisel peab UI näitama `Sõiduplaan vajab kontrolli`.
+
+## Arhitektuuri release-invariandid 4.4.0+
+
+Need ei muuda C-01..C-37 kasutajakäitumist, kuid kaitsevad sama arhitektuuri
+järgmistes muudatustes:
+
+- `Panel<T>` elutsükkel on `mount()` / `update()` / valikuline `tick(now: Date)` /
+  `destroy()`; roteeruv paneel ei tohi defineerida oma eraldi tick-sisendi tüüpi.
+- `src/diagnostics/**` ei sõltu UI-kihist. Silumisülekate on UI komponent
+  `src/ui/debug-overlay.ts`; logger jääb diagnostikakihti.
+- `index.html` sisaldab CSP meta-varuvarianti. PowerShelli HTTP-päis jääb
+  autoriteetsemaks poliitikaks ja lisab ka `frame-ancestors 'none'`, mida CSP meta
+  ei jõusta.
+- Release-checklist sisaldab `npm run measure:check`. 24 h eelarve on vaikimisi
+  1000 loodud HTML-elementi ja 200 loodud SVG-elementi; selle ületamine on
+  jõudlusregressioon, kuni mõõtmine tõendab vastupidist.

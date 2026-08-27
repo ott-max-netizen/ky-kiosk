@@ -1,7 +1,7 @@
 import type { DashboardData, WeatherData } from "../../data/types";
 import { weatherPhenomenonEt } from "../../domain/weather/phenomenon";
 import { capitalizeFirst, validDate } from "../../domain/time/zoned";
-import { createElement, formatNumber, requireElement, setHidden, setText } from "../dom";
+import { createElement, formatNumber, requireChildElement, requireElement, setHidden, setText } from "../dom";
 import { reconcileChildren } from "../reconcile";
 import { formatDateValue, updateSectionStale, weatherMeta } from "./helpers";
 import type { Panel } from "./panel";
@@ -117,12 +117,10 @@ export class WeatherPanel implements Panel<WeatherSlice> {
         return item;
       },
       (item, day) => {
-        const [weekday, dayIconNode, range, rain] = item.children as unknown as [
-          HTMLElement,
-          HTMLElement,
-          HTMLElement,
-          HTMLElement,
-        ];
+        const weekday = requireChildElement(item, 0);
+        const dayIconNode = requireChildElement(item, 1);
+        const range = requireChildElement(item, 2);
+        const rain = requireChildElement(item, 3);
         const [, dayIcon] = weatherMeta(day.weatherCode);
         setText(weekday, capitalizeFirst(formatDateValue(day.date, "weekdayShort", slice.timeZone)));
         setText(dayIconNode, dayIcon);

@@ -33,43 +33,36 @@ Vastus peab olema `KU-INFOEKRAAN-OK`.
 
 ## 3. Frontendi uuendamine
 
-1. Arvutis, kus npm registrile on ligipääs, loo esimesel korral lock-fail. Selles väljalaskepaketis ei saanud npm registri võrgupiirangu tõttu `package-lock.json` faili genereerida:
-
-```bash
-npm install
-git add package-lock.json
-git commit -m "build: lukusta arendussõltuvused"
-```
-
-Kui lock-fail on olemas, kasuta edaspidi reprodutseeritavat paigaldust ja kõiki kvaliteediväravaid:
+1. Arvutis, kus npm registrile on ligipääs, kasuta versioonihalduses olevat `package-lock.json` faili ja paigalda sõltuvused reprodutseeritavalt:
 
 ```bash
 npm ci
 npm run check
 npm run test:visual
 npm run test:sources   # internetiga release-smoke
+npm run measure:check  # 24 h kiirendatud Chromium + DOM/SVG eelarve
 npm run build
 ```
 
-> **4.3.0 seis:** `npm run check` lõpeb praegu ainsa veaga preflightis —
-> `tests/e2e/snapshots/build-version.txt` on `4.0.0`, projekt `4.3.0`. Baseline'id
+> **4.4.0 seis:** `npm run check` lõpeb seni ainsa teadaoleva release-blokeerijaga preflightis —
+> `tests/e2e/snapshots/build-version.txt` on `4.0.0`, projekt `4.4.0`. Baseline'id
 > pärinevad versioonist 4.0.0 ja näitavad veel vana nelja kuu maja-paneeli, mille
 > 4.1.0 asendas kolme vaatega, seega ei saa need ühegi praeguse buildi vastu läbi
 > minna. Enne release'i tuleb need kioskiga sarnasel masinal käsuga
 > `npm run test:visual:update` uuendada ja silmaga üle vaadata. Kõik ülejäänud 125
 > preflighti kontrolli läbivad.
 
-Jõudluse kontrollmõõtmine päris brauseris (valikuline, aga soovituslik enne
-release'i, et avastada paneelide DOM-i taasehitamise regressioon):
+Jõudluse kontrollmõõtmine on release-checklisti osa:
 
 ```bash
-npm run build
-node tools/measure.mjs --hours 24
+npm run measure:check
 ```
 
-Kui „HTML elements created in 24 h“ tõuseb sadadelt tuhandetesse, on mõni paneel
-naasnud iga tiksu peale alampuu uuesti ehitamise juurde. Mõõdetud võrdlusarvud on
-`docs/baseline.md` failis.
+Käsk ehitab rakenduse, simuleerib Chromiumis 24 tundi ja kukub läbi, kui
+dünaamiliselt luuakse üle **1000 HTML-** või **200 SVG-elemendi**. 4.3.0
+mõõdetud baas oli vastavalt 266 ja 64, seega jätab värav teadliku varu, kuid
+püüab kinni paneeli tagasimineku „lammuta ja ehita iga tick uuesti“ mustrisse.
+Mõõdetud võrdlusarvud on `docs/baseline.md` failis.
 
 2. Tee kioskimasinas varukoopia:
 

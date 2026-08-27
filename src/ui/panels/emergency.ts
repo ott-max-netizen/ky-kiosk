@@ -36,7 +36,8 @@ export class EmergencyPanel implements Panel<EmergencySlice> {
     this.render();
   }
 
-  tick(nowMs: number): void {
+  tick(now: Date): void {
+    const nowMs = now.getTime();
     const pages = Math.max(1, Math.ceil(this.slice.items.length / this.slice.pageSize));
     if (pages <= 1 || nowMs < this.nextRotationAt) return;
     this.page = (this.page + 1) % pages;

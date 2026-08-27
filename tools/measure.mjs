@@ -3,7 +3,11 @@
  * SVG-sõlmede arv, registreeritud taimerid ja kuulajad, JS-i mälukasutus ning
  * nende kasv kiirendatud 24 h sessiooni jooksul.
  *
- *   node tools/measure.mjs [--hours 24] [--json out.json]
+ *   node tools/measure.mjs [--hours 24] [--json out.json] [--assert-budgets]
+ *
+ * `--assert-budgets` muudab mõõtmise release-väravaks. Vaikimisi lubatakse
+ * kuni 1000 dünaamiliselt loodud HTML-elementi ja 200 SVG-elementi 24 h kohta;
+ * piire saab muuta `--max-html-created` / `--max-svg-created` argumentidega.
  *
  * Eeldab, et `npm run build` on tehtud. Brauseri saab ette anda muutujaga
  * PLAYWRIGHT_CHROMIUM_EXECUTABLE, muidu kasutatakse Playwrighti oma brauserit.
@@ -20,9 +24,24 @@ const argValue = (name, fallback) => {
   const index = args.indexOf(`--${name}`);
   return index >= 0 && args[index + 1] ? args[index + 1] : fallback;
 };
+const hasArg = (name) => args.includes(`--${name}`);
 const hours = Number(argValue("hours", "24"));
 const jsonOut = argValue("json", "");
+const assertBudgets = hasArg("assert-budgets");
+const maxHtmlCreated = Number(argValue("max-html-created", "1000"));
+const maxSvgCreated = Number(argValue("max-svg-created", "200"));
 const PORT = 4178;
+
+function finitePositive(name, value) {
+  if (!Number.isFinite(value) || value <= 0) throw new Error(`${name} peab olema positiivne arv`);
+  return value;
+}
+
+finitePositive("hours", hours);
+if (assertBudgets) {
+  finitePositive("max-html-created", maxHtmlCreated);
+  finitePositive("max-svg-created", maxSvgCreated);
+}
 
 function bundleSizes() {
   const assets = join(root, "dist", "assets");
@@ -217,3 +236,20 @@ const table = [
 console.log("");
 for (const [label, value] of table) console.log(`${label.padEnd(32)} ${value}`);
 if (jsonOut) writeFileSync(jsonOut, JSON.stringify(results, null, 2));
+
+if (assertBudgets) {
+  const failures = [];
+  if (results.final.elementsCreated > maxHtmlCreated) {
+    failures.push(`HTML elemente loodi ${results.final.elementsCreated}, eelarve ${maxHtmlCreated}`);
+  }
+  if (results.final.svgElementsCreated > maxSvgCreated) {
+    failures.push(`SVG elemente loodi ${results.final.svgElementsCreated}, eelarve ${maxSvgCreated}`);
+  }
+  if (failures.length) {
+    console.error("\nJõudluseelarve EI LÄBINUD:");
+    for (const failure of failures) console.error(`- ${failure}`);
+    process.exitCode = 1;
+  } else {
+    console.log(`\nJõudluseelarve läbitud: HTML ≤ ${maxHtmlCreated}, SVG ≤ ${maxSvgCreated}.`);
+  }
+}
