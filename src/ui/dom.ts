@@ -30,7 +30,10 @@ export function setClass(element: HTMLElement, className: string, enabled: boole
 export function formatNumber(value: unknown, digits = 1): string {
   const number = Number(value);
   if (!Number.isFinite(number)) return "–";
-  return new Intl.NumberFormat("et-EE", { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(number);
+  return new Intl.NumberFormat("et-EE", {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  }).format(number);
 }
 
 export function clearElement(element: HTMLElement): void {

@@ -35,7 +35,9 @@ export function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 export function clampText(value: unknown, max = MAX_TEXT): string {
-  return String(value ?? "").trim().slice(0, max);
+  return String(value ?? "")
+    .trim()
+    .slice(0, max);
 }
 
 function finite(value: unknown): number | null {
@@ -135,7 +137,8 @@ function validateWeatherCurrent(value: unknown): WeatherCurrent | null {
   const apparentTemperature = finite(value.apparentTemperature);
   const weatherCode = finite(value.weatherCode);
   const windSpeed = finite(value.windSpeed);
-  if (temperature === null || apparentTemperature === null || weatherCode === null || windSpeed === null) return null;
+  if (temperature === null || apparentTemperature === null || weatherCode === null || windSpeed === null)
+    return null;
   const result: WeatherCurrent = { temperature, apparentTemperature, weatherCode, windSpeed };
   const optionalNumbers: Array<[keyof WeatherCurrent, unknown]> = [
     ["relativeHumidity", value.relativeHumidity],
@@ -166,7 +169,8 @@ function validateWeatherDaily(value: unknown): WeatherDaily | null {
   const min = finite(value.min);
   const precipitationProbability = finite(value.precipitationProbability);
   const date = clampText(value.date, 20);
-  if (!date || weatherCode === null || max === null || min === null || precipitationProbability === null) return null;
+  if (!date || weatherCode === null || max === null || min === null || precipitationProbability === null)
+    return null;
   return {
     date,
     weatherCode,
@@ -182,7 +186,12 @@ function validateWeather(value: unknown): WeatherData | null {
   if (!isRecord(value)) return null;
   const current = validateWeatherCurrent(value.current);
   if (!current) return null;
-  const daily = Array.isArray(value.daily) ? value.daily.map(validateWeatherDaily).filter((item): item is WeatherDaily => item !== null).slice(0, 7) : [];
+  const daily = Array.isArray(value.daily)
+    ? value.daily
+        .map(validateWeatherDaily)
+        .filter((item): item is WeatherDaily => item !== null)
+        .slice(0, 7)
+    : [];
   const result: WeatherData = { current, daily };
   const source = clampText(value.source, 160);
   const forecastSource = clampText(value.forecastSource, 160);
@@ -240,7 +249,10 @@ function validateElectricity(value: unknown, problems: string[]): ElectricityDat
     return null;
   }
   const points = Array.isArray(value.points)
-    ? value.points.map(validateElectricityPoint).filter((item): item is ElectricityPoint => item !== null).slice(0, 192)
+    ? value.points
+        .map(validateElectricityPoint)
+        .filter((item): item is ElectricityPoint => item !== null)
+        .slice(0, 192)
     : [];
   if (!points.length) return null;
   const result: ElectricityData = {
@@ -255,7 +267,8 @@ function validateElectricity(value: unknown, problems: string[]): ElectricityDat
     const number = nullableFinite(value[key]);
     if (number !== null) result[key] = number;
   }
-  if (value.currentTariffType === "day" || value.currentTariffType === "night") result.currentTariffType = value.currentTariffType;
+  if (value.currentTariffType === "day" || value.currentTariffType === "night")
+    result.currentTariffType = value.currentTariffType;
   const label = clampText(value.currentTariffLabelEt, 80);
   if (label) result.currentTariffLabelEt = label;
   const source = clampText(value.source, 160);
@@ -302,7 +315,10 @@ function validateEuribor(value: unknown): EuriborData | null {
   const latestDate = clampText(value.latestDate, 20);
   if (latest === null || !latestDate) return null;
   const points = Array.isArray(value.points)
-    ? value.points.map(validateEuriborPoint).filter((item): item is EuriborPoint => item !== null).slice(-200)
+    ? value.points
+        .map(validateEuriborPoint)
+        .filter((item): item is EuriborPoint => item !== null)
+        .slice(-200)
     : [];
   const result: EuriborData = {
     tenor: clampText(value.tenor, 20) || "6M",
@@ -326,15 +342,25 @@ function validateMeta(value: unknown): SectionMeta | null {
   const error = clampText(value.error, 500);
   if (error) result.error = error;
   if (value.missing === true) result.missing = true;
-  if (Array.isArray(value.warnings)) result.warnings = value.warnings.map((item) => clampText(item, 500)).filter(Boolean).slice(0, 20);
+  if (Array.isArray(value.warnings))
+    result.warnings = value.warnings
+      .map((item) => clampText(item, 500))
+      .filter(Boolean)
+      .slice(0, 20);
   return result;
 }
 
 const ARRAY_VALIDATORS: Partial<Record<SectionName, (value: unknown) => unknown>> = {
-  notices: (value) => (Array.isArray(value) ? value.map(validateNotice).filter((item): item is Notice => item !== null) : null),
-  contacts: (value) => (Array.isArray(value) ? value.map(validateContact).filter((item): item is Contact => item !== null) : null),
-  emergency: (value) => (Array.isArray(value) ? value.map(validateEmergency).filter((item): item is EmergencyContact => item !== null) : null),
-  waste: (value) => (Array.isArray(value) ? value.map(validateWaste).filter((item): item is WasteItem => item !== null) : null),
+  notices: (value) =>
+    Array.isArray(value) ? value.map(validateNotice).filter((item): item is Notice => item !== null) : null,
+  contacts: (value) =>
+    Array.isArray(value) ? value.map(validateContact).filter((item): item is Contact => item !== null) : null,
+  emergency: (value) =>
+    Array.isArray(value)
+      ? value.map(validateEmergency).filter((item): item is EmergencyContact => item !== null)
+      : null,
+  waste: (value) =>
+    Array.isArray(value) ? value.map(validateWaste).filter((item): item is WasteItem => item !== null) : null,
 };
 
 export function validateDashboardPayload(input: unknown): ValidationResult<IncomingDashboardPayload> {
@@ -395,7 +421,10 @@ function warningRecord(value: unknown): Partial<Record<SectionName, string[]>> {
   for (const name of SECTION_NAMES) {
     const raw = value[name];
     if (!Array.isArray(raw)) continue;
-    const warnings = raw.map((item) => clampText(item, 500)).filter(Boolean).slice(0, 20);
+    const warnings = raw
+      .map((item) => clampText(item, 500))
+      .filter(Boolean)
+      .slice(0, 20);
     if (warnings.length) result[name] = warnings;
   }
   return result;
@@ -421,12 +450,13 @@ export function validateCachedDashboard(input: unknown): DashboardData | null {
     ok: true,
     updatedAt: payload.updatedAt,
     ...(typeof input.cachedAt === "string" ? { cachedAt: clampText(input.cachedAt, 40) } : {}),
-    settings: payload.settings ?? validateSettings({}) ?? {
-      buildingName: "KÜ Kauge 32 infoekraan",
-      buildingAddress: "",
-      weatherLocation: "Viljandi",
-      timeZone: "Europe/Tallinn",
-    },
+    settings: payload.settings ??
+      validateSettings({}) ?? {
+        buildingName: "KÜ Kauge 32 infoekraan",
+        buildingAddress: "",
+        weatherLocation: "Viljandi",
+        timeZone: "Europe/Tallinn",
+      },
     sections: payload.sections,
     sectionUpdatedAt: textRecord(input.sectionUpdatedAt, 40),
     sectionErrors: textRecord(input.sectionErrors, 500),

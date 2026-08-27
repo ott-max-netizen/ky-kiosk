@@ -14,7 +14,8 @@ export interface WeatherSlice {
 function observedTime(weather: WeatherData, timeZone: string): string {
   const value = weather.current.observedAt || weather.current.time;
   const date = validDate(value);
-  if (date) return new Intl.DateTimeFormat("et-EE", { timeZone, hour: "2-digit", minute: "2-digit" }).format(date);
+  if (date)
+    return new Intl.DateTimeFormat("et-EE", { timeZone, hour: "2-digit", minute: "2-digit" }).format(date);
   const match = String(value || "").match(/T(\d{2}:\d{2})/);
   return match?.[1] ?? "";
 }
@@ -67,14 +68,26 @@ export class WeatherPanel implements Panel<WeatherSlice> {
     setText(nodes.icon, icon);
     setText(
       nodes.temperature,
-      Number.isFinite(weather.current.temperature) ? `${formatNumber(weather.current.temperature, 1)}°` : "–°",
+      Number.isFinite(weather.current.temperature)
+        ? `${formatNumber(weather.current.temperature, 1)}°`
+        : "–°",
     );
     const translated = weatherPhenomenonEt(weather.current.phenomenon || weather.current.phenomenonRaw);
     setText(nodes.description, translated || fallbackDescription);
 
     const stats = [
-      ["Tajutav temperatuur", Number.isFinite(weather.current.apparentTemperature) ? `${formatNumber(weather.current.apparentTemperature, 1)}°` : "–"],
-      ["Tuul", Number.isFinite(weather.current.windSpeed) ? `${formatNumber(weather.current.windSpeed, 1)} m/s` : "–"],
+      [
+        "Tajutav temperatuur",
+        Number.isFinite(weather.current.apparentTemperature)
+          ? `${formatNumber(weather.current.apparentTemperature, 1)}°`
+          : "–",
+      ],
+      [
+        "Tuul",
+        Number.isFinite(weather.current.windSpeed)
+          ? `${formatNumber(weather.current.windSpeed, 1)} m/s`
+          : "–",
+      ],
     ] as const;
     reconcileChildren(
       nodes.stats,
@@ -104,12 +117,22 @@ export class WeatherPanel implements Panel<WeatherSlice> {
         return item;
       },
       (item, day) => {
-        const [weekday, dayIconNode, range, rain] = item.children as unknown as [HTMLElement, HTMLElement, HTMLElement, HTMLElement];
+        const [weekday, dayIconNode, range, rain] = item.children as unknown as [
+          HTMLElement,
+          HTMLElement,
+          HTMLElement,
+          HTMLElement,
+        ];
         const [, dayIcon] = weatherMeta(day.weatherCode);
         setText(weekday, capitalizeFirst(formatDateValue(day.date, "weekdayShort", slice.timeZone)));
         setText(dayIconNode, dayIcon);
         setText(range, `${Math.round(day.min)}° / ${Math.round(day.max)}°`);
-        setText(rain, Number.isFinite(day.precipitationProbability) ? `Sadu ${Math.round(day.precipitationProbability)}%` : "Sadu –");
+        setText(
+          rain,
+          Number.isFinite(day.precipitationProbability)
+            ? `Sadu ${Math.round(day.precipitationProbability)}%`
+            : "Sadu –",
+        );
       },
     );
 
@@ -162,7 +185,12 @@ export class WeatherPanel implements Panel<WeatherSlice> {
     const station = weather.current.stationName?.trim();
     const location = slice.data.settings.weatherLocation || "Viljandi";
     const source = measured ? "Keskkonnaagentuur" : "Open-Meteo";
-    setText(this.place, [measured ? station || location : location, source, observedTime(weather, slice.timeZone)].filter(Boolean).join(" · "));
+    setText(
+      this.place,
+      [measured ? station || location : location, source, observedTime(weather, slice.timeZone)]
+        .filter(Boolean)
+        .join(" · "),
+    );
   }
 
   private sunItem(parent: HTMLElement, label: string): HTMLElement {

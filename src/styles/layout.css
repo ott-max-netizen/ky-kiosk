@@ -11,7 +11,7 @@
   gap: 0.65rem;
 }
 .dashboard.no-notices {
-  grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.65fr) minmax(0, 0.90fr);
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.65fr) minmax(0, 0.9fr);
   grid-template-rows: minmax(0, 1.28fr) minmax(0, 0.61fr) 7.6rem;
 }
 
@@ -41,8 +41,15 @@
   gap: 0.65rem;
 }
 .weather-panel,
-.house-panel { min-width: 0; min-height: 0; display: flex; flex-direction: column; }
-.weather-panel { padding-bottom: 0.55rem; }
+.house-panel {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.weather-panel {
+  padding-bottom: 0.55rem;
+}
 .dashboard.no-notices .weather-stack {
   grid-template-rows: minmax(0, 1.48fr) minmax(0, 0.92fr);
 }
@@ -56,10 +63,26 @@
   padding-bottom: 0.52rem;
   border-left: 0.25rem solid var(--accent);
 }
-.waste-panel { grid-area: waste; display: flex; flex-direction: column; }
-.side-stack { display: contents; }
-.contacts-panel { grid-area: contacts; min-height: 0; display: flex; flex-direction: column; }
-.emergency-panel { grid-area: emergency; min-height: 0; display: flex; flex-direction: column; }
+.waste-panel {
+  grid-area: waste;
+  display: flex;
+  flex-direction: column;
+}
+.side-stack {
+  display: contents;
+}
+.contacts-panel {
+  grid-area: contacts;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.emergency-panel {
+  grid-area: emergency;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
 
 .panel-head {
   display: flex;
@@ -69,10 +92,12 @@
   margin-bottom: 0.5rem;
   min-width: 0;
 }
-.panel-head.compact { margin-bottom: 0.45rem; }
+.panel-head.compact {
+  margin-bottom: 0.45rem;
+}
 .panel h2 {
   margin: 0.12rem 0 0;
-  font-size: 1.70rem;
+  font-size: 1.7rem;
   line-height: 1.02;
   font-weight: 800;
   letter-spacing: -0.015em;
@@ -85,7 +110,9 @@
   letter-spacing: 0.08em;
   color: var(--brand);
 }
-.panel h2.panel-kicker-heading.danger { color: var(--danger); }
+.panel h2.panel-kicker-heading.danger {
+  color: var(--danger);
+}
 .panel-head-meta,
 .info-head-side {
   display: flex;
@@ -109,11 +136,19 @@
   padding: 0.16rem 0.34rem;
   border-radius: 0.3rem;
 }
-.section-stale[hidden] { display: none; }
-.notice-column > .page-label[hidden] { display: none; }
-.danger { color: var(--danger); }
+.section-stale[hidden] {
+  display: none;
+}
+.notice-column > .page-label[hidden] {
+  display: none;
+}
+.danger {
+  color: var(--danger);
+}
 
-.info-panel-head { margin-bottom: 0.28rem; }
+.info-panel-head {
+  margin-bottom: 0.28rem;
+}
 .info-content {
   flex: 1;
   min-height: 0;
@@ -153,16 +188,28 @@
   gap: 0.5rem;
   margin-bottom: 0.32rem;
 }
-.subsection-label { color: var(--text); }
+.subsection-label {
+  color: var(--text);
+}
 @media (prefers-reduced-motion: reduce) {
-  .shell { transition: none; }
+  .shell {
+    transition: none;
+  }
 }
 
 /* Hooldusvaade väiksemas brauseriaknas; kioskis kasutatakse 1920x1080 paigutust. */
 @media (max-width: 1250px) {
-  html { font-size: max(16px, calc((100vw / 72) * var(--scale))); }
-  body { overflow: auto; cursor: default; }
-  .shell { height: auto; min-height: 100vh; }
+  html {
+    font-size: max(16px, calc((100vw / 72) * var(--scale)));
+  }
+  body {
+    overflow: auto;
+    cursor: default;
+  }
+  .shell {
+    height: auto;
+    min-height: 100vh;
+  }
   .dashboard,
   .dashboard.no-notices {
     grid-template-columns: 1fr 1fr;
@@ -170,12 +217,26 @@
     grid-template-areas: "info info" "weather waste" "contacts emergency" "bus bus";
   }
   .weather-stack,
-  .dashboard.no-notices .weather-stack { grid-template-rows: auto auto; }
+  .dashboard.no-notices .weather-stack {
+    grid-template-rows: auto auto;
+  }
   .bus-panel {
     grid-template-columns: 1fr;
     height: auto;
   }
-  .bus-direction { padding-left: 0; padding-top: 0.5rem; border-left: 0; border-top: 0.06rem solid var(--line); }
-  .info-content { grid-template-columns: 1fr; }
-  .market-column { padding-left: 0; padding-top: 0.7rem; border-left: 0; border-top: 0.06rem solid var(--line); }
+  .bus-direction {
+    padding-left: 0;
+    padding-top: 0.5rem;
+    border-left: 0;
+    border-top: 0.06rem solid var(--line);
+  }
+  .info-content {
+    grid-template-columns: 1fr;
+  }
+  .market-column {
+    padding-left: 0;
+    padding-top: 0.7rem;
+    border-left: 0;
+    border-top: 0.06rem solid var(--line);
+  }
 }

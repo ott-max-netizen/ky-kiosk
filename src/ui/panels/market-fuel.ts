@@ -4,7 +4,10 @@ import { reconcileChildren } from "../reconcile";
 import { formatDateValue, sectionUpdatedTime } from "./helpers";
 import type { Panel } from "./panel";
 
-export interface FuelSlice { data: DashboardData; timeZone: string }
+export interface FuelSlice {
+  data: DashboardData;
+  timeZone: string;
+}
 
 export class MarketFuelPanel implements Panel<FuelSlice> {
   private meta!: HTMLElement;
@@ -30,17 +33,30 @@ export class MarketFuelPanel implements Panel<FuelSlice> {
     if (!data) {
       setText(this.meta, "Eesti keskmine");
       const existing = this.values.firstElementChild as HTMLElement | null;
-      if (existing?.classList.contains("market-empty") && this.values.childElementCount === 1) setText(existing, "Kütusehind puudub");
+      if (existing?.classList.contains("market-empty") && this.values.childElementCount === 1)
+        setText(existing, "Kütusehind puudub");
       else this.values.replaceChildren(createElement("div", "market-empty", "Kütusehind puudub"));
       this.applyStale(slice.data);
       return;
     }
     if (this.values.firstElementChild?.classList.contains("market-empty")) this.values.replaceChildren();
-    setText(this.meta, `Eesti keskmine${data.displayDate || data.bulletinDate ? ` · ${formatDateValue(data.displayDate || data.bulletinDate, "dayMonth", slice.timeZone)}` : ""}`);
+    setText(
+      this.meta,
+      `Eesti keskmine${data.displayDate || data.bulletinDate ? ` · ${formatDateValue(data.displayDate || data.bulletinDate, "dayMonth", slice.timeZone)}` : ""}`,
+    );
     const updated = sectionUpdatedTime(slice.data, "fuel", slice.timeZone);
-    setText(this.source, [`${data.source || "OpenVan.camp"} · Eesti nädala keskmine`, updated ? `andmed ${updated}` : ""].filter(Boolean).join(" · "));
+    setText(
+      this.source,
+      [`${data.source || "OpenVan.camp"} · Eesti nädala keskmine`, updated ? `andmed ${updated}` : ""]
+        .filter(Boolean)
+        .join(" · "),
+    );
     // Kolm rida uuenevad iga sünkroonimisega; sõlmed on taaskasutatavad.
-    const rows = [["95", data.petrol95], ["98", data.petrol98], ["D", data.diesel]] as const;
+    const rows = [
+      ["95", data.petrol95],
+      ["98", data.petrol98],
+      ["D", data.diesel],
+    ] as const;
     reconcileChildren(
       this.values,
       rows,
@@ -64,7 +80,9 @@ export class MarketFuelPanel implements Panel<FuelSlice> {
     this.applyStale(slice.data);
   }
 
-  destroy(): void { this.mounted = false; }
+  destroy(): void {
+    this.mounted = false;
+  }
 
   private applyStale(data: DashboardData): void {
     const error = data.sectionErrors.fuel;
@@ -73,6 +91,9 @@ export class MarketFuelPanel implements Panel<FuelSlice> {
     const stale = Boolean(error) || age > 86_400_000;
     this.card.classList.toggle("is-stale", stale);
     this.stale.hidden = !stale;
-    setText(this.stale, stale ? (error ? "vahemälust" : `${Math.max(1, Math.floor(age / 86_400_000))} p vana`) : "");
+    setText(
+      this.stale,
+      stale ? (error ? "vahemälust" : `${Math.max(1, Math.floor(age / 86_400_000))} p vana`) : "",
+    );
   }
 }

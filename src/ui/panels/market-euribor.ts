@@ -4,7 +4,10 @@ import { createElement, formatNumber, requireElement, setText } from "../dom";
 import { formatDateValue, sectionUpdatedTime } from "./helpers";
 import type { Panel } from "./panel";
 
-export interface EuriborSlice { data: DashboardData; timeZone: string }
+export interface EuriborSlice {
+  data: DashboardData;
+  timeZone: string;
+}
 
 export class MarketEuriborPanel implements Panel<EuriborSlice> {
   private meta!: HTMLElement;
@@ -36,7 +39,8 @@ export class MarketEuriborPanel implements Panel<EuriborSlice> {
       setText(this.meta, "Viimased 6 kuud");
       setText(this.current, "–");
       this.chart.update([]);
-      if (!this.container.querySelector(".market-empty")) this.container.appendChild(createElement("div", "market-empty", "Euribor puudub"));
+      if (!this.container.querySelector(".market-empty"))
+        this.container.appendChild(createElement("div", "market-empty", "Euribor puudub"));
       this.applyStale(slice.data);
       return;
     }
@@ -47,11 +51,19 @@ export class MarketEuriborPanel implements Panel<EuriborSlice> {
     setText(this.current, `${formatNumber(latest.value, 3)}%`);
     this.chart.update(sorted);
     const updated = sectionUpdatedTime(slice.data, "euribor", slice.timeZone);
-    setText(this.source, [data.source || "Soome Pank · EMMI", "24 h viitega", updated ? `andmed ${updated}` : ""].filter(Boolean).join(" · "));
+    setText(
+      this.source,
+      [data.source || "Soome Pank · EMMI", "24 h viitega", updated ? `andmed ${updated}` : ""]
+        .filter(Boolean)
+        .join(" · "),
+    );
     this.applyStale(slice.data);
   }
 
-  destroy(): void { this.chart?.destroy(); this.mounted = false; }
+  destroy(): void {
+    this.chart?.destroy();
+    this.mounted = false;
+  }
 
   private applyStale(data: DashboardData): void {
     const error = data.sectionErrors.euribor;
@@ -60,6 +72,9 @@ export class MarketEuriborPanel implements Panel<EuriborSlice> {
     const stale = Boolean(error) || age > 86_400_000;
     this.card.classList.toggle("is-stale", stale);
     this.stale.hidden = !stale;
-    setText(this.stale, stale ? (error ? "vahemälust" : `${Math.max(1, Math.floor(age / 86_400_000))} p vana`) : "");
+    setText(
+      this.stale,
+      stale ? (error ? "vahemälust" : `${Math.max(1, Math.floor(age / 86_400_000))} p vana`) : "",
+    );
   }
 }

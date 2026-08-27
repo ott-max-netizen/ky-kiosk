@@ -22,7 +22,11 @@ interface Params {
 
 function readParams(): Params {
   const params = new URLSearchParams(location.search);
-  return { demo: params.get("demo") === "1", noNotices: params.get("notices") === "0", debug: params.get("debug") === "1" };
+  return {
+    demo: params.get("demo") === "1",
+    noNotices: params.get("notices") === "0",
+    debug: params.get("debug") === "1",
+  };
 }
 
 function allVersions(value = 1): SectionVersions {
@@ -31,17 +35,28 @@ function allVersions(value = 1): SectionVersions {
   return result;
 }
 
-function normalizeDemoPayload(payload: IncomingDashboardPayload, noNotices: boolean): IncomingDashboardPayload {
+function normalizeDemoPayload(
+  payload: IncomingDashboardPayload,
+  noNotices: boolean,
+): IncomingDashboardPayload {
   const now = new Date();
   const nowIso = now.toISOString();
-  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Tallinn", year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
+  const today = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Tallinn",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(now);
   const copy: IncomingDashboardPayload = {
     ...payload,
     updatedAt: nowIso,
-    notices: noNotices ? [] : (payload.notices ?? []).map((notice) => ({ ...notice, start: null, end: null })),
+    notices: noNotices
+      ? []
+      : (payload.notices ?? []).map((notice) => ({ ...notice, start: null, end: null })),
     sections: { ...payload.sections },
   };
-  for (const name of Object.keys(copy.sections) as SectionName[]) copy.sections[name] = { ...copy.sections[name], ok: true, updatedAt: nowIso };
+  for (const name of Object.keys(copy.sections) as SectionName[])
+    copy.sections[name] = { ...copy.sections[name], ok: true, updatedAt: nowIso };
   if (payload.electricity) {
     const sourceDate = payload.electricity.date;
     const sourceMidnight = Date.parse(`${sourceDate}T00:00:00Z`);
@@ -50,7 +65,10 @@ function normalizeDemoPayload(payload: IncomingDashboardPayload, noNotices: bool
     copy.electricity = {
       ...payload.electricity,
       date: today,
-      points: payload.electricity.points.map((point) => ({ ...point, time: new Date(Date.parse(point.time) + shift).toISOString() })),
+      points: payload.electricity.points.map((point) => ({
+        ...point,
+        time: new Date(Date.parse(point.time) + shift).toISOString(),
+      })),
     };
   }
   return copy;
@@ -84,14 +102,23 @@ export async function bootstrap(): Promise<void> {
   let pixelShiftIndex = 0;
   let stopped = false;
 
-  const view = new AppView(config, params.debug, () => scheduler.names(), (warnings) => {
-    const marker = "Prügiveo sagedus: ";
-    const state = store.get();
-    const current = state.status.runtimeProblems.filter((item) => !item.startsWith(marker));
-    const next = [...current, ...warnings.map((warning) => `${marker}${warning}`)].slice(-20);
-    if (next.length === state.status.runtimeProblems.length && next.every((item, index) => item === state.status.runtimeProblems[index])) return;
-    store.patchStatus({ runtimeProblems: next });
-  });
+  const view = new AppView(
+    config,
+    params.debug,
+    () => scheduler.names(),
+    (warnings) => {
+      const marker = "Prügiveo sagedus: ";
+      const state = store.get();
+      const current = state.status.runtimeProblems.filter((item) => !item.startsWith(marker));
+      const next = [...current, ...warnings.map((warning) => `${marker}${warning}`)].slice(-20);
+      if (
+        next.length === state.status.runtimeProblems.length &&
+        next.every((item, index) => item === state.status.runtimeProblems[index])
+      )
+        return;
+      store.patchStatus({ runtimeProblems: next });
+    },
+  );
   view.mount();
   view.update(store.get(), true);
   const unsubscribe = store.subscribe((next, previous) => {
@@ -145,7 +172,11 @@ export async function bootstrap(): Promise<void> {
     }
     clearSyncTimers();
     const start = performance.now();
-    store.patchStatus({ syncing: true, connectionText: "Uuendan andmeid…", connectionState: navigator.onLine ? "neutral" : "offline" });
+    store.patchStatus({
+      syncing: true,
+      connectionText: "Uuendan andmeid…",
+      connectionState: navigator.onLine ? "neutral" : "offline",
+    });
     try {
       const loaded = await client.load();
       await applyPayload(loaded.payload);
@@ -177,15 +208,30 @@ export async function bootstrap(): Promise<void> {
   try {
     if (params.demo) {
       await applyPayload(await loadDemo(params.noNotices), false);
-      store.patchStatus({ connectionState: "online", connectionText: "Demorežiim – välispäringud on välja lülitatud", lastSuccessfulSyncMs: Date.now(), retryDelayMs: 30_000 });
+      store.patchStatus({
+        connectionState: "online",
+        connectionText: "Demorežiim – välispäringud on välja lülitatud",
+        lastSuccessfulSyncMs: Date.now(),
+        retryDelayMs: 30_000,
+      });
     } else {
       const cached = await repository.get();
       if (cached) {
         store.setData(cached, allVersions());
-        store.patchStatus({ connectionState: navigator.onLine ? "neutral" : "offline", connectionText: navigator.onLine ? "Kuvatakse vahemälu, sünkroonin…" : "Ühendus puudub – kuvatakse viimaseid andmeid" });
+        store.patchStatus({
+          connectionState: navigator.onLine ? "neutral" : "offline",
+          connectionText: navigator.onLine
+            ? "Kuvatakse vahemälu, sünkroonin…"
+            : "Ühendus puudub – kuvatakse viimaseid andmeid",
+        });
       }
       const configError = configurationMessage(config);
-      if (configError) store.patchStatus({ connectionState: "offline", connectionText: configError, lastError: configError });
+      if (configError)
+        store.patchStatus({
+          connectionState: "offline",
+          connectionText: configError,
+          lastError: configError,
+        });
       else void sync();
     }
   } catch (error) {
@@ -218,23 +264,31 @@ export async function bootstrap(): Promise<void> {
     store.patchStatus({ connectionState: "neutral", connectionText: "Ühendus taastub, sünkroonin…" });
     void sync();
   };
-  const onOffline = () => store.patchStatus({ connectionState: "offline", connectionText: "Ühendus puudub – kuvatakse viimaseid andmeid" });
+  const onOffline = () =>
+    store.patchStatus({
+      connectionState: "offline",
+      connectionText: "Ühendus puudub – kuvatakse viimaseid andmeid",
+    });
   const onResize = () => view.invalidateLayout();
   window.addEventListener("online", onOnline);
   window.addEventListener("offline", onOffline);
   window.addEventListener("resize", onResize);
   await retireServiceWorkers();
 
-  window.addEventListener("beforeunload", () => {
-    stopped = true;
-    clearSyncTimers();
-    client.abort();
-    scheduler.stop();
-    unsubscribe();
-    cleanupGuards();
-    view.destroy();
-    window.removeEventListener("online", onOnline);
-    window.removeEventListener("offline", onOffline);
-    window.removeEventListener("resize", onResize);
-  }, { once: true });
+  window.addEventListener(
+    "beforeunload",
+    () => {
+      stopped = true;
+      clearSyncTimers();
+      client.abort();
+      scheduler.stop();
+      unsubscribe();
+      cleanupGuards();
+      view.destroy();
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
+      window.removeEventListener("resize", onResize);
+    },
+    { once: true },
+  );
 }

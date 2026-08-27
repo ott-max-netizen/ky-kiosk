@@ -14,10 +14,19 @@ export class MarketSummaryPanel implements Panel<DashboardData> {
     this.mount();
     const count = ["electricity", "fuel", "euribor"].filter((name) => {
       const updated = Date.parse(data.sectionUpdatedAt[name as "electricity" | "fuel" | "euribor"] ?? "");
-      return Boolean(data.sectionErrors[name as "electricity" | "fuel" | "euribor"]) || !Number.isFinite(updated) || Date.now() - updated > 86_400_000;
+      return (
+        Boolean(data.sectionErrors[name as "electricity" | "fuel" | "euribor"]) ||
+        !Number.isFinite(updated) ||
+        Date.now() - updated > 86_400_000
+      );
     }).length;
     setHidden(this.element, count === 0);
-    setText(this.element, count ? (count === 1 ? "1 allikas vahemälust" : `${count} allikat vahemälust`) : "");
+    setText(
+      this.element,
+      count ? (count === 1 ? "1 allikas vahemälust" : `${count} allikat vahemälust`) : "",
+    );
   }
-  destroy(): void { this.mounted = false; }
+  destroy(): void {
+    this.mounted = false;
+  }
 }

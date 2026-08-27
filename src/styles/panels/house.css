@@ -58,8 +58,14 @@
   animation: house-view-fade 320ms ease-out both;
 }
 @keyframes house-view-fade {
-  from { opacity: 0; transform: translateX(0.22rem); }
-  to { opacity: 1; transform: translateX(0); }
+  from {
+    opacity: 0;
+    transform: translateX(0.22rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 .house-empty {
   height: 100%;
@@ -88,7 +94,9 @@
 }
 .house-kpi-row:last-child,
 .house-trend-row:last-child,
-.house-year-row:last-child { border-bottom: 0; }
+.house-year-row:last-child {
+  border-bottom: 0;
+}
 .house-kpi-identity,
 .house-trend-identity,
 .house-year-identity {
@@ -138,16 +146,24 @@
   text-align: right;
   white-space: nowrap;
 }
-.house-kpi-change.is-positive { color: var(--success); }
-.house-kpi-change.is-warning { color: var(--danger); }
-.house-kpi-change.is-neutral { color: var(--muted); }
+.house-kpi-change.is-positive {
+  color: var(--success);
+}
+.house-kpi-change.is-warning {
+  color: var(--danger);
+}
+.house-kpi-change.is-neutral {
+  color: var(--muted);
+}
 
 .house-trend-row {
   grid-template-columns: minmax(4.2rem, 0.82fr) minmax(4.6rem, 0.9fr) minmax(4.8rem, 1.18fr);
   gap: 0.25rem;
   border-bottom: 0.04rem solid color-mix(in srgb, var(--line) 60%, transparent);
 }
-.house-trend-value { font-size: var(--fs-d); }
+.house-trend-value {
+  font-size: var(--fs-d);
+}
 .house-sparkline {
   display: block;
   width: 100%;
@@ -195,7 +211,9 @@
   gap: 0.35rem;
   border-bottom: 0.04rem solid color-mix(in srgb, var(--line) 60%, transparent);
 }
-.house-year-value { font-size: var(--fs-c); }
+.house-year-value {
+  font-size: var(--fs-c);
+}
 .house-year-meta {
   color: var(--muted);
   font-size: var(--fs-d);
@@ -204,10 +222,18 @@
   text-align: right;
 }
 
-.house-water { color: var(--house-water); }
-.house-heat { color: var(--house-heat); }
-.house-electricity { color: var(--house-electricity); }
-.house-solar { color: var(--house-solar); }
+.house-water {
+  color: var(--house-water);
+}
+.house-heat {
+  color: var(--house-heat);
+}
+.house-electricity {
+  color: var(--house-electricity);
+}
+.house-solar {
+  color: var(--house-solar);
+}
 .house-kpi-identity.house-water,
 .house-kpi-identity.house-heat,
 .house-kpi-identity.house-electricity,
@@ -219,12 +245,20 @@
 .house-year-identity.house-water,
 .house-year-identity.house-heat,
 .house-year-identity.house-electricity,
-.house-year-identity.house-solar { color: var(--text); }
+.house-year-identity.house-solar {
+  color: var(--text);
+}
 
 @media (prefers-reduced-motion: reduce) {
-  .house-view-enter { animation: house-view-fade-reduced 180ms linear both; }
+  .house-view-enter {
+    animation: house-view-fade-reduced 180ms linear both;
+  }
   @keyframes house-view-fade-reduced {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
   }
 }

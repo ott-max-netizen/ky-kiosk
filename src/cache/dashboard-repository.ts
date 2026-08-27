@@ -83,7 +83,8 @@ export class DashboardRepository {
         const transaction = connection.transaction(DB_STORE, "readwrite");
         transaction.objectStore(DB_STORE).put(value, DB_KEY);
         transaction.oncomplete = () => resolve();
-        transaction.onerror = () => reject(transaction.error ?? new Error("Vahemällu salvestamine ebaõnnestus"));
+        transaction.onerror = () =>
+          reject(transaction.error ?? new Error("Vahemällu salvestamine ebaõnnestus"));
         transaction.onabort = () => reject(transaction.error ?? new Error("Vahemällu salvestamine katkes"));
       });
     } finally {

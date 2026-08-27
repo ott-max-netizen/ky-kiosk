@@ -3,14 +3,40 @@ import { describe, expect, it } from "vitest";
 
 const SHEETS = ["Seaded", "Teated", "Kontaktid", "Avarii", "Prugivedu", "Elekter", "Maja"];
 const COLUMNS = [
-  "Võti", "Väärtus", "ID", "Pealkiri", "Tekst", "Tüüp", "Algus", "Lõpp", "Aktiivne", "Prioriteet",
-  "Roll", "Nimi", "Telefon", "E-post", "Nimetus", "Märkus", "Jäätmeliik", "Kuupäev", "Sagedus",
-  "Pakett", "Võimsus VMA2", "Hinnad käibemaksuta", "Aasta", "Kuu", "Veekulu m³", "Soojusetarbimine MWh",
-  "Elektritarbimine kWh", "Päikesepaneelide tootlus kWh",
+  "Võti",
+  "Väärtus",
+  "ID",
+  "Pealkiri",
+  "Tekst",
+  "Tüüp",
+  "Algus",
+  "Lõpp",
+  "Aktiivne",
+  "Prioriteet",
+  "Roll",
+  "Nimi",
+  "Telefon",
+  "E-post",
+  "Nimetus",
+  "Märkus",
+  "Jäätmeliik",
+  "Kuupäev",
+  "Sagedus",
+  "Pakett",
+  "Võimsus VMA2",
+  "Hinnad käibemaksuta",
+  "Aasta",
+  "Kuu",
+  "Veekulu m³",
+  "Soojusetarbimine MWh",
+  "Elektritarbimine kWh",
+  "Päikesepaneelide tootlus kWh",
 ];
 
 describe("Google Sheetsi skeem", () => {
-  const source = ["Code.gs", "Sheets.gs"].map((name) => readFileSync(new URL(`../../apps-script/${name}`, import.meta.url), "utf8")).join("\n");
+  const source = ["Code.gs", "Sheets.gs"]
+    .map((name) => readFileSync(new URL(`../../apps-script/${name}`, import.meta.url), "utf8"))
+    .join("\n");
   it.each(SHEETS)("säilitab lehe %s", (name) => expect(source).toContain(name));
   it.each(COLUMNS)("säilitab veeru %s", (name) => expect(source).toContain(name));
   it("ei väljasta kontakti e-posti kliendile", () => {

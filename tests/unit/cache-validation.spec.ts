@@ -13,7 +13,12 @@ describe("vahemälu valideerimine", () => {
       ok: true,
       updatedAt: "2026-08-25T10:00:00.000Z",
       sections: {},
-      settings: { buildingName: "KÜ", buildingAddress: "", weatherLocation: "Viljandi", timeZone: "Europe/Tallinn" },
+      settings: {
+        buildingName: "KÜ",
+        buildingAddress: "",
+        weatherLocation: "Viljandi",
+        timeZone: "Europe/Tallinn",
+      },
       notices: "see ei ole massiiv",
       contacts: [{ role: "Juhatus", name: "Mari", phone: "5000000", email: "private@example.test" }],
     };
@@ -60,13 +65,20 @@ describe("vahemälu valideerimine", () => {
       ok: true,
       updatedAt: null,
       sections: {},
-      notices: [{ id: "x", title: "T", body: "a".repeat(50_000), type: "info", priority: 1, start: null, end: null }],
+      notices: [
+        { id: "x", title: "T", body: "a".repeat(50_000), type: "info", priority: 1, start: null, end: null },
+      ],
     });
     expect(result?.notices[0]?.body.length).toBe(12_000);
   });
 
   it("annab id-ta teatele püsiva id, mis ei muutu iga valideerimisega", () => {
-    const payload = { ok: true, updatedAt: null, sections: {}, notices: [{ title: "Ilma id-ta", body: "tekst" }] };
+    const payload = {
+      ok: true,
+      updatedAt: null,
+      sections: {},
+      notices: [{ title: "Ilma id-ta", body: "tekst" }],
+    };
     const first = validateCachedDashboard(JSON.parse(JSON.stringify(payload)));
     const second = validateCachedDashboard(JSON.parse(JSON.stringify(payload)));
     expect(first?.notices[0]?.id).toBeTruthy();

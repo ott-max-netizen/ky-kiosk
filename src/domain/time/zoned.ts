@@ -107,7 +107,10 @@ export function addCalendarDays(parts: CalendarDate, days: number): CalendarDate
   return { year: date.getUTCFullYear(), month: date.getUTCMonth() + 1, day: date.getUTCDate() };
 }
 
-export function sameCalendarDate(a: CalendarDate | null | undefined, b: CalendarDate | null | undefined): boolean {
+export function sameCalendarDate(
+  a: CalendarDate | null | undefined,
+  b: CalendarDate | null | undefined,
+): boolean {
   return Boolean(a && b && a.year === b.year && a.month === b.month && a.day === b.day);
 }
 

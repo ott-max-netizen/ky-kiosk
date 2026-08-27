@@ -31,7 +31,10 @@ export function loadDemoTemplate(): IncomingDashboardPayload {
  * visuaaltesti käitumist: elektripunktid, sektsioonide ajatemplid ja teated
  * nihutatakse alati referenceNow päeva peale.
  */
-export function makeDemoData(referenceNow = VISUAL_REFERENCE_NOW, withNotices = true): IncomingDashboardPayload {
+export function makeDemoData(
+  referenceNow = VISUAL_REFERENCE_NOW,
+  withNotices = true,
+): IncomingDashboardPayload {
   const source = clone(loadDemoTemplate());
   const sourceDate = source.electricity?.date || "2026-08-25";
   const targetDate = ymd(referenceNow);
@@ -67,18 +70,22 @@ export function makeDemoData(referenceNow = VISUAL_REFERENCE_NOW, withNotices = 
 
 export function makeMaxDemoData(referenceNow = VISUAL_REFERENCE_NOW): IncomingDashboardPayload {
   const source = makeDemoData(referenceNow, true);
-  const longBody = Array.from({ length: 32 }, (_, index) =>
-    `Pikk teateosa ${index + 1}: maja hooldustööde ajal palume järgida trepikojas olevaid juhiseid ja hoida läbipääsud vabad.`,
+  const longBody = Array.from(
+    { length: 32 },
+    (_, index) =>
+      `Pikk teateosa ${index + 1}: maja hooldustööde ajal palume järgida trepikojas olevaid juhiseid ja hoida läbipääsud vabad.`,
   ).join(" ");
-  source.notices = [{
-    id: "MAX-LONG",
-    title: "Pika teate lehekülgede kontroll",
-    body: longBody.slice(0, 1200),
-    type: "warning",
-    start: null,
-    end: null,
-    priority: 1,
-  }];
+  source.notices = [
+    {
+      id: "MAX-LONG",
+      title: "Pika teate lehekülgede kontroll",
+      body: longBody.slice(0, 1200),
+      type: "warning",
+      start: null,
+      end: null,
+      priority: 1,
+    },
+  ];
   source.contacts = Array.from({ length: 8 }, (_, index) => ({
     role: index === 0 ? "Juhatuse esimees" : `Kontakt ${index + 1}`,
     name: `Näidisnimi ${index + 1}`,
@@ -90,7 +97,18 @@ export function makeMaxDemoData(referenceNow = VISUAL_REFERENCE_NOW): IncomingDa
     note: index === 0 ? "Elu, tervise või vara vahetu oht" : "Ööpäevaringne kontakt",
     priority: index + 1,
   }));
-  const wasteKinds = ["Segaolmejäätmed", "Biojäätmed", "Segapakend", "Paber ja papp", "Klaas", "Metall", "Tekstiil", "Ohtlikud jäätmed", "Elektroonika", "Suurjäätmed"];
+  const wasteKinds = [
+    "Segaolmejäätmed",
+    "Biojäätmed",
+    "Segapakend",
+    "Paber ja papp",
+    "Klaas",
+    "Metall",
+    "Tekstiil",
+    "Ohtlikud jäätmed",
+    "Elektroonika",
+    "Suurjäätmed",
+  ];
   source.waste = wasteKinds.map((type, index) => ({
     type,
     date: `2026-08-${String(25 + (index % 4)).padStart(2, "0")}`,

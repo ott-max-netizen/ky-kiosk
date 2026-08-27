@@ -44,5 +44,7 @@ export class StatusBarPanel implements Panel<StatusBarSlice> {
     setText(this.build, `v${slice.config.buildVersion || "dev"} · ${slice.config.buildDate || "–"}`);
   }
 
-  destroy(): void { this.mounted = false; }
+  destroy(): void {
+    this.mounted = false;
+  }
 }

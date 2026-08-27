@@ -1,4 +1,12 @@
-import { addCalendarDays, datePartsForValue, daysUntil, epochDay, type CalendarDate, weekday, ymdKey } from "../time/zoned";
+import {
+  addCalendarDays,
+  datePartsForValue,
+  daysUntil,
+  epochDay,
+  type CalendarDate,
+  weekday,
+  ymdKey,
+} from "../time/zoned";
 import { parseWasteFrequency } from "./frequency";
 
 export interface WasteItem {
@@ -25,7 +33,8 @@ export function expandWasteItem(
   timeZone = "Europe/Tallinn",
 ): WasteExpansion {
   const parsed = parseWasteFrequency(item.frequency);
-  if (!parsed.frequency) return { occurrences: [], warnings: parsed.warnings.map((warning) => `${item.type}: ${warning}`) };
+  if (!parsed.frequency)
+    return { occurrences: [], warnings: parsed.warnings.map((warning) => `${item.type}: ${warning}`) };
   const anchor = datePartsForValue(item.date, timeZone);
   const todayEpoch = epochDay(today);
   const endEpoch = todayEpoch + daysMax;
@@ -60,7 +69,11 @@ export function expandWasteItem(
   const intervalDays = parsed.frequency.weeks * 7;
   const anchorEpoch = epochDay(anchor);
   let cycle = Math.max(0, Math.ceil((todayEpoch - anchorEpoch) / intervalDays));
-  for (let occurrenceEpoch = anchorEpoch + cycle * intervalDays; occurrenceEpoch <= endEpoch; occurrenceEpoch += intervalDays) {
+  for (
+    let occurrenceEpoch = anchorEpoch + cycle * intervalDays;
+    occurrenceEpoch <= endEpoch;
+    occurrenceEpoch += intervalDays
+  ) {
     if (occurrenceEpoch >= todayEpoch) {
       const parts = addCalendarDays(anchor, cycle * intervalDays);
       occurrences.push({ item: { ...item, date: ymdKey(parts) }, days: occurrenceEpoch - todayEpoch });
@@ -83,9 +96,16 @@ export function nextWasteByType(
     return result.occurrences;
   });
   const next = new Map<string, WasteOccurrence>();
-  for (const occurrence of all.sort((a, b) => a.days - b.days || a.item.type.localeCompare(b.item.type, "et"))) {
+  for (const occurrence of all.sort(
+    (a, b) => a.days - b.days || a.item.type.localeCompare(b.item.type, "et"),
+  )) {
     const key = occurrence.item.type.trim().toLocaleLowerCase("et-EE");
     if (!next.has(key)) next.set(key, occurrence);
   }
-  return { occurrences: [...next.values()].sort((a, b) => a.days - b.days || a.item.type.localeCompare(b.item.type, "et")), warnings };
+  return {
+    occurrences: [...next.values()].sort(
+      (a, b) => a.days - b.days || a.item.type.localeCompare(b.item.type, "et"),
+    ),
+    warnings,
+  };
 }

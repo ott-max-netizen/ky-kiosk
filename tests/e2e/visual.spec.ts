@@ -1,5 +1,10 @@
 import { expect, test, type Page } from "@playwright/test";
-import { makeDemoData, makeMaxDemoData, makeStaleCache, VISUAL_REFERENCE_NOW } from "../fixtures/make-demo-data";
+import {
+  makeDemoData,
+  makeMaxDemoData,
+  makeStaleCache,
+  VISUAL_REFERENCE_NOW,
+} from "../fixtures/make-demo-data";
 
 async function freeze(page: Page, date = VISUAL_REFERENCE_NOW): Promise<void> {
   await page.clock.install({ time: date });
@@ -7,7 +12,11 @@ async function freeze(page: Page, date = VISUAL_REFERENCE_NOW): Promise<void> {
 
 async function routeDemo(page: Page, payload: unknown): Promise<void> {
   await page.route("**/sample-data.json", async (route) => {
-    await route.fulfill({ status: 200, contentType: "application/json; charset=utf-8", body: JSON.stringify(payload) });
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json; charset=utf-8",
+      body: JSON.stringify(payload),
+    });
   });
 }
 
@@ -23,7 +32,9 @@ async function waitForReady(page: Page): Promise<void> {
 async function seedCache(page: Page, payload: ReturnType<typeof makeDemoData>): Promise<void> {
   await page.goto("/?demo=1");
   await page.evaluate(async (data) => {
-    const sectionUpdatedAt = Object.fromEntries(Object.entries(data.sections ?? {}).map(([name, meta]) => [name, meta?.updatedAt ?? data.updatedAt]));
+    const sectionUpdatedAt = Object.fromEntries(
+      Object.entries(data.sections ?? {}).map(([name, meta]) => [name, meta?.updatedAt ?? data.updatedAt]),
+    );
     const cached = { ...data, sectionUpdatedAt, sectionErrors: {}, cachedAt: data.updatedAt };
     await new Promise<void>((resolve, reject) => {
       const request = indexedDB.open("ku-infoekraan", 1);
@@ -35,7 +46,10 @@ async function seedCache(page: Page, payload: ReturnType<typeof makeDemoData>): 
       request.onsuccess = () => {
         const transaction = request.result.transaction("cache", "readwrite");
         transaction.objectStore("cache").put(cached, "dashboard-data-v6");
-        transaction.oncomplete = () => { request.result.close(); resolve(); };
+        transaction.oncomplete = () => {
+          request.result.close();
+          resolve();
+        };
         transaction.onerror = () => reject(transaction.error);
       };
     });
@@ -43,7 +57,10 @@ async function seedCache(page: Page, payload: ReturnType<typeof makeDemoData>): 
 }
 
 test.beforeEach(async ({ page }) => {
-  await page.addStyleTag({ content: "* { animation: none !important; transition: none !important; caret-color: transparent !important; }" });
+  await page.addStyleTag({
+    content:
+      "* { animation: none !important; transition: none !important; caret-color: transparent !important; }",
+  });
 });
 
 test("teadetega päevavaade", async ({ page }) => {

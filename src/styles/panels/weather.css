@@ -13,7 +13,10 @@
   gap: 0.42rem;
   padding: 0.04rem 0;
 }
-.weather-icon { font-size: 2.45rem; line-height: 1; }
+.weather-icon {
+  font-size: 2.45rem;
+  line-height: 1;
+}
 .weather-temp {
   font-size: 3rem;
   font-weight: 800;
@@ -68,7 +71,11 @@
   color: var(--text);
   font-weight: 700;
 }
-.forecast-day .i { font-size: 1.45rem; line-height: 1; margin: 0.06rem 0; }
+.forecast-day .i {
+  font-size: 1.45rem;
+  line-height: 1;
+  margin: 0.06rem 0;
+}
 .forecast-day .t,
 .forecast-day .rain {
   font-size: var(--fs-c);
@@ -78,7 +85,9 @@
 }
 /* Ilmapaneel hoiab päikeserea alles ka siis, kui andmeid pole; ilma selle
    reeglita võidaks eksplitsiitne display: flex UA [hidden] reegli üle. */
-.sun-row[hidden] { display: none; }
+.sun-row[hidden] {
+  display: none;
+}
 .sun-row {
   display: flex;
   justify-content: space-between;
@@ -99,4 +108,3 @@
   line-height: 1;
   font-weight: 800;
 }
-

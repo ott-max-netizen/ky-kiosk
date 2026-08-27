@@ -37,7 +37,10 @@ export function hasHouseData(item: HouseMonth): boolean {
 }
 
 export function sortHouseMonths(months: HouseMonth[]): HouseMonth[] {
-  return months.filter(hasHouseData).slice().sort((a, b) => houseMonthKey(a) - houseMonthKey(b));
+  return months
+    .filter(hasHouseData)
+    .slice()
+    .sort((a, b) => houseMonthKey(a) - houseMonthKey(b));
 }
 
 export function lastHouseMonths(months: HouseMonth[], count = 4): HouseMonth[] {
@@ -64,7 +67,14 @@ export function getPreviousHouseMonth(months: HouseMonth[], latest: HouseMonth):
 }
 
 export function calculatePercentageChange(current: number | null, previous: number | null): number | null {
-  if (current === null || previous === null || !Number.isFinite(current) || !Number.isFinite(previous) || previous === 0) return null;
+  if (
+    current === null ||
+    previous === null ||
+    !Number.isFinite(current) ||
+    !Number.isFinite(previous) ||
+    previous === 0
+  )
+    return null;
   const raw = ((current - previous) / previous) * 100;
   if (!Number.isFinite(raw) || Math.abs(raw) < 0.5) return 0;
   const rounded = Math.round(raw);
@@ -91,7 +101,9 @@ export function calculateYearTotals(months: HouseMonth[], reportYear?: number): 
 export function metricScale(months: HouseMonth[], key: HouseMetricKey): { min: number; max: number } {
   const values = months
     .map((item) => item[key])
-    .filter((value): value is number => value !== null && value !== undefined && Number.isFinite(Number(value)))
+    .filter(
+      (value): value is number => value !== null && value !== undefined && Number.isFinite(Number(value)),
+    )
     .map(Number);
   if (!values.length) return { min: 0, max: 1 };
   const min = Math.min(...values);

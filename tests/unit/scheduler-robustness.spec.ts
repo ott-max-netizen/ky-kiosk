@@ -11,9 +11,14 @@ describe("scheduler robustness", () => {
     const scheduler = new Scheduler();
     const errors: unknown[] = [];
     scheduler.setErrorHandler((_name, error) => errors.push(error));
-    scheduler.register("watchdog", 1_000, async () => {
-      throw new Error("võrk kadus");
-    }, true);
+    scheduler.register(
+      "watchdog",
+      1_000,
+      async () => {
+        throw new Error("võrk kadus");
+      },
+      true,
+    );
     scheduler.runDueTasks(Date.now());
     await Promise.resolve();
     await Promise.resolve();
@@ -25,9 +30,14 @@ describe("scheduler robustness", () => {
     const scheduler = new Scheduler();
     const errors: unknown[] = [];
     scheduler.setErrorHandler((_name, error) => errors.push(error));
-    scheduler.register("clock", 1_000, () => {
-      throw new Error("renderdus ebaõnnestus");
-    }, true);
+    scheduler.register(
+      "clock",
+      1_000,
+      () => {
+        throw new Error("renderdus ebaõnnestus");
+      },
+      true,
+    );
     scheduler.runDueTasks(Date.now());
     expect(errors).toHaveLength(1);
   });
@@ -36,12 +46,17 @@ describe("scheduler robustness", () => {
     const scheduler = new Scheduler();
     let started = 0;
     const releases: Array<() => void> = [];
-    scheduler.register("maintenance", 1_000, () => {
-      started += 1;
-      return new Promise<void>((resolve) => {
-        releases.push(resolve);
-      });
-    }, true);
+    scheduler.register(
+      "maintenance",
+      1_000,
+      () => {
+        started += 1;
+        return new Promise<void>((resolve) => {
+          releases.push(resolve);
+        });
+      },
+      true,
+    );
 
     const base = 1_000_000;
     scheduler.runDueTasks(base);
@@ -72,9 +87,14 @@ describe("scheduler robustness", () => {
   it("recovers when the system clock jumps backwards", () => {
     const scheduler = new Scheduler();
     let runs = 0;
-    scheduler.register("clock", 1_000, () => {
-      runs += 1;
-    }, true);
+    scheduler.register(
+      "clock",
+      1_000,
+      () => {
+        runs += 1;
+      },
+      true,
+    );
     const base = 3_000_000;
     scheduler.runDueTasks(base);
     expect(runs).toBe(1);
@@ -90,7 +110,14 @@ describe("scheduler robustness", () => {
     vi.useFakeTimers();
     const setIntervalSpy = vi.spyOn(window, "setInterval");
     const scheduler = new Scheduler();
-    for (const name of ["clock", "time-sensitive", "watchdog", "maintenance", "debug", "pixel-shift"] as const) {
+    for (const name of [
+      "clock",
+      "time-sensitive",
+      "watchdog",
+      "maintenance",
+      "debug",
+      "pixel-shift",
+    ] as const) {
       scheduler.register(name, 1_000, () => undefined);
     }
     scheduler.start();

@@ -22,13 +22,18 @@ export function marketCurrentIndex(points: ElectricityPointLike[], now = new Dat
     const start = Date.parse(points[index]?.time ?? "");
     const next = index + 1 < points.length ? Date.parse(points[index + 1]?.time ?? "") : Number.NaN;
     if (!Number.isFinite(start)) continue;
-    const fallbackEnd = start + (index > 0 ? Math.max(900_000, start - Date.parse(points[index - 1]?.time ?? "")) : 3_600_000);
+    const fallbackEnd =
+      start + (index > 0 ? Math.max(900_000, start - Date.parse(points[index - 1]?.time ?? "")) : 3_600_000);
     const end = Number.isFinite(next) ? next : fallbackEnd;
     if (nowMs >= start && nowMs < end) return index;
   }
   return -1;
 }
 
-export function electricityDateIsToday(date: unknown, now = new Date(), timeZone = "Europe/Tallinn"): boolean {
+export function electricityDateIsToday(
+  date: unknown,
+  now = new Date(),
+  timeZone = "Europe/Tallinn",
+): boolean {
   return String(date ?? "") === ymdKey(zonedParts(now, timeZone));
 }

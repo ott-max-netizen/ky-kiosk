@@ -33,7 +33,14 @@ export class WastePanel implements Panel<WasteSlice> {
   private axis: HTMLElement | null = null;
   private empty: HTMLElement | null = null;
   private axisWindowDays = 0;
-  private slice: WasteSlice = { items: [], now: new Date(), timeZone: "Europe/Tallinn", windowDays: 30, pageSize: 5, rotationMs: 18_000 };
+  private slice: WasteSlice = {
+    items: [],
+    now: new Date(),
+    timeZone: "Europe/Tallinn",
+    windowDays: 30,
+    pageSize: 5,
+    rotationMs: 18_000,
+  };
   private occurrences: WasteOccurrence[] = [];
   private page = 0;
   private nextRotationAt = 0;
@@ -50,7 +57,12 @@ export class WastePanel implements Panel<WasteSlice> {
   update(slice: WasteSlice): void {
     this.mount();
     this.slice = slice;
-    const result = nextWasteByType(slice.items, slice.windowDays, zonedParts(slice.now, slice.timeZone), slice.timeZone);
+    const result = nextWasteByType(
+      slice.items,
+      slice.windowDays,
+      zonedParts(slice.now, slice.timeZone),
+      slice.timeZone,
+    );
     this.occurrences = result.occurrences;
     slice.onWarnings?.(result.warnings);
     const pages = Math.max(1, Math.ceil(this.occurrences.length / slice.pageSize));
@@ -136,7 +148,9 @@ export class WastePanel implements Panel<WasteSlice> {
     const axis = createElement("div", "axis");
     axis.appendChild(createElement("div"));
     const labels = createElement("div", "axis-labels numeric");
-    const ticks = [0, 7, 14, 21, this.slice.windowDays].filter((value, index, values) => value <= this.slice.windowDays && values.indexOf(value) === index);
+    const ticks = [0, 7, 14, 21, this.slice.windowDays].filter(
+      (value, index, values) => value <= this.slice.windowDays && values.indexOf(value) === index,
+    );
     for (const value of ticks) {
       const span = createElement("span", undefined, value === 0 ? "täna" : `${value} p`);
       span.style.left = `${(value / this.slice.windowDays) * 100}%`;

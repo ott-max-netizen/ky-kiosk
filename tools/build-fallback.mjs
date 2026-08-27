@@ -27,19 +27,25 @@ function modulePath(specifier) {
 export function buildModules(out, { css = true } = {}) {
   rmSync(out, { recursive: true, force: true });
   mkdirSync(out, { recursive: true });
-  execFileSync(process.execPath, [
-    join(root, "node_modules", "typescript", "lib", "tsc.js"),
-    "-p", buildConfig,
-    "--outDir", out,
-  ], { cwd: root, stdio: "inherit" });
+  execFileSync(
+    process.execPath,
+    [join(root, "node_modules", "typescript", "lib", "tsc.js"), "-p", buildConfig, "--outDir", out],
+    { cwd: root, stdio: "inherit" },
+  );
 
   for (const file of walk(join(out, "src"))) {
     if (!file.endsWith(".js")) continue;
     let code = readFileSync(file, "utf8");
     code = code.replace(/^import\s+["'][^"']+\.css["'];?\s*$/gm, "");
     code = code.replace(/(from\s+["'])(\.\.?\/[^"']+)(["'])/g, (_, a, b, c) => `${a}${modulePath(b)}${c}`);
-    code = code.replace(/(import\s*\(\s*["'])(\.\.?\/[^"']+)(["']\s*\))/g, (_, a, b, c) => `${a}${modulePath(b)}${c}`);
-    code = code.replace(/(import\s+["'])(\.\.?\/[^"']+)(["'];?)/g, (_, a, b, c) => `${a}${modulePath(b)}${c}`);
+    code = code.replace(
+      /(import\s*\(\s*["'])(\.\.?\/[^"']+)(["']\s*\))/g,
+      (_, a, b, c) => `${a}${modulePath(b)}${c}`,
+    );
+    code = code.replace(
+      /(import\s+["'])(\.\.?\/[^"']+)(["'];?)/g,
+      (_, a, b, c) => `${a}${modulePath(b)}${c}`,
+    );
     writeFileSync(file, code);
   }
 
@@ -60,10 +66,21 @@ export function buildFallback(out = join(root, "dist")) {
     .replaceAll("%BASE_URL%", "./")
     .replace('src="/src/main.ts"', 'src="./src/main.js"');
   const cssLinks = [
-    "tokens.css", "base.css", "layout.css", "panels/notices.css", "panels/market.css",
-    "panels/buses.css", "panels/weather.css", "panels/house.css", "panels/waste.css",
-    "panels/contacts.css", "panels/status.css", "night.css",
-  ].map((path) => `  <link rel="stylesheet" href="./src/styles/${path}">`).join("\n");
+    "tokens.css",
+    "base.css",
+    "layout.css",
+    "panels/notices.css",
+    "panels/market.css",
+    "panels/buses.css",
+    "panels/weather.css",
+    "panels/house.css",
+    "panels/waste.css",
+    "panels/contacts.css",
+    "panels/status.css",
+    "night.css",
+  ]
+    .map((path) => `  <link rel="stylesheet" href="./src/styles/${path}">`)
+    .join("\n");
   html = html.replace("</head>", `${cssLinks}\n</head>`);
   writeFileSync(join(out, "index.html"), html);
 

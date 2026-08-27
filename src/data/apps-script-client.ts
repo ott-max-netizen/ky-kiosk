@@ -17,7 +17,8 @@ export class AppsScriptClient {
   }
 
   private endpoint(): URL {
-    if (!endpointConfigured(this.config)) throw new ConfigurationError("Apps Scripti URL on seadistamata või vigane");
+    if (!endpointConfigured(this.config))
+      throw new ConfigurationError("Apps Scripti URL on seadistamata või vigane");
     if (!tokenConfigured(this.config)) throw new ConfigurationError("Feed'i token on seadistamata");
     const url = new URL(this.config.appsScriptUrl);
     url.searchParams.set("token", this.config.feedToken);
@@ -55,12 +56,16 @@ export class AppsScriptClient {
     } catch (fetchError) {
       if (fetchError instanceof ConfigurationError) throw fetchError;
       // Kui fetch jõudis juba 20 s timeoutini, ei aita sama backendiga uus 20 s JSONP-katse.
-      if (fetchError instanceof DOMException && fetchError.name === "AbortError") throw new Error("Sünkroonimise ajalimiit ületatud");
+      if (fetchError instanceof DOMException && fetchError.name === "AbortError")
+        throw new Error("Sünkroonimise ajalimiit ületatud");
       raw = await jsonpRequest(new URL(endpoint.toString()), 20_000);
     }
     const validated = validateDashboardPayload(raw);
     if (!validated.value || validated.value.ok === false) {
-      const message = raw && typeof raw === "object" && "error" in raw ? String((raw as { error?: unknown }).error) : "Vigane serverivastus";
+      const message =
+        raw && typeof raw === "object" && "error" in raw
+          ? String((raw as { error?: unknown }).error)
+          : "Vigane serverivastus";
       throw new Error(message);
     }
     return { payload: validated.value, problems: validated.problems };

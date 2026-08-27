@@ -34,7 +34,11 @@ export function reconcileChildren<T>(
  * Hoiab konteineris täpselt `count` ühesugust last ja tagastab need. Kasutusel
  * seal, kus lapsed on üksteisest eristamatud (lehekülje punktid, vaateindikaator).
  */
-export function reconcileCount(container: HTMLElement, count: number, create: () => HTMLElement): HTMLElement[] {
+export function reconcileCount(
+  container: HTMLElement,
+  count: number,
+  create: () => HTMLElement,
+): HTMLElement[] {
   const children = container.children;
   while (children.length < count) container.appendChild(create());
   while (children.length > count) container.lastElementChild?.remove();

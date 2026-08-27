@@ -13,7 +13,10 @@ const LABELS: Array<[SectionName | "root", string]> = [
   ["euribor", "Euribor"],
 ];
 
-export interface StaleBannerSlice { data: DashboardData; nowMs: number }
+export interface StaleBannerSlice {
+  data: DashboardData;
+  nowMs: number;
+}
 
 export class StaleBannerPanel implements Panel<StaleBannerSlice> {
   private banner!: HTMLElement;
@@ -45,5 +48,7 @@ export class StaleBannerPanel implements Panel<StaleBannerSlice> {
     );
   }
 
-  destroy(): void { this.mounted = false; }
+  destroy(): void {
+    this.mounted = false;
+  }
 }

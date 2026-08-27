@@ -1,6 +1,13 @@
 import { busDayType, busSchoolSeasonActive, type BusDayType } from "./day-type";
 import { busScheduleStatus, type BusScheduleStatus } from "./schedule-status";
-import { addCalendarDays, epochDay, parseDateOnly, type CalendarDate, ymdKey, zonedParts } from "../time/zoned";
+import {
+  addCalendarDays,
+  epochDay,
+  parseDateOnly,
+  type CalendarDate,
+  ymdKey,
+  zonedParts,
+} from "../time/zoned";
 
 export type BusScheduleEntry = readonly [time: string, line: string, note?: string, flag?: string];
 
@@ -98,7 +105,11 @@ export function busRelativeLabel(item: Pick<BusDeparture, "dayOffset" | "minutes
   return minutes ? `${hours} h ${minutes} min pärast` : `${hours} h pärast`;
 }
 
-export function getBusState(timetable: BusTimetable | null, now = new Date(), timeZone = "Europe/Tallinn"): BusState {
+export function getBusState(
+  timetable: BusTimetable | null,
+  now = new Date(),
+  timeZone = "Europe/Tallinn",
+): BusState {
   const parts = zonedParts(now, timeZone);
   return {
     center: nextBusDepartures(timetable, "center", 2, now, timeZone),

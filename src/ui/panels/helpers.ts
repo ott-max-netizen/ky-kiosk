@@ -3,14 +3,35 @@ import { getFormatters } from "../../domain/time/formatters";
 import { parseDateOnly, validDate } from "../../domain/time/zoned";
 import { requireElement, setHidden, setText } from "../dom";
 
-const MONTHS_SHORT = ["jaan", "veebr", "märts", "apr", "mai", "juuni", "juuli", "aug", "sept", "okt", "nov", "dets"];
+const MONTHS_SHORT = [
+  "jaan",
+  "veebr",
+  "märts",
+  "apr",
+  "mai",
+  "juuni",
+  "juuli",
+  "aug",
+  "sept",
+  "okt",
+  "nov",
+  "dets",
+];
 
-export function formatDateValue(value: unknown, kind: "dayMonth" | "dayLongMonth" | "dayOnly" | "monthShort" | "weekdayShort" | "time" | "dateTime", timeZone: string): string {
+export function formatDateValue(
+  value: unknown,
+  kind: "dayMonth" | "dayLongMonth" | "dayOnly" | "monthShort" | "weekdayShort" | "time" | "dateTime",
+  timeZone: string,
+): string {
   const formatters = getFormatters(timeZone);
   const only = parseDateOnly(value);
   if (kind === "monthShort") {
     const parts = only;
-    return parts ? MONTHS_SHORT[parts.month - 1] ?? "" : validDate(value) ? formatters.monthShort.format(validDate(value) as Date) : "";
+    return parts
+      ? (MONTHS_SHORT[parts.month - 1] ?? "")
+      : validDate(value)
+        ? formatters.monthShort.format(validDate(value) as Date)
+        : "";
   }
   if (only) {
     const date = new Date(Date.UTC(only.year, only.month - 1, only.day, 12));
@@ -22,7 +43,13 @@ export function formatDateValue(value: unknown, kind: "dayMonth" | "dayLongMonth
   return date ? formatters[kind].format(date) : "";
 }
 
-export function updateSectionStale(data: DashboardData, name: SectionName, elementId: string, prefix: string, timeZone: string): boolean {
+export function updateSectionStale(
+  data: DashboardData,
+  name: SectionName,
+  elementId: string,
+  prefix: string,
+  timeZone: string,
+): boolean {
   const element = requireElement(elementId);
   const error = data.sectionErrors[name];
   if (!error) {
@@ -33,7 +60,9 @@ export function updateSectionStale(data: DashboardData, name: SectionName, eleme
   }
   const updatedAt = data.sectionUpdatedAt[name];
   const date = validDate(updatedAt);
-  const label = date ? `${prefix} ${getFormatters(timeZone).time.format(date)}` : `${prefix} varasemast vahemälust`;
+  const label = date
+    ? `${prefix} ${getFormatters(timeZone).time.format(date)}`
+    : `${prefix} varasemast vahemälust`;
   setText(element, label);
   setHidden(element, false);
   element.title = error;

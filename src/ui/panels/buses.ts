@@ -67,25 +67,37 @@ export class BusesPanel implements Panel<BusesSlice> {
 
   private key(state: BusState, now: Date, timeZone: string): string {
     const minute = getFormatters(timeZone).time.format(now);
-    const encode = (items: BusDeparture[]) => items.map((item) => `${item.date}|${item.time}|${item.line}|${item.minutesUntil}`).join(";");
+    const encode = (items: BusDeparture[]) =>
+      items.map((item) => `${item.date}|${item.time}|${item.line}|${item.minutesUntil}`).join(";");
     return `${minute}|${state.schedule.code}|${encode(state.center)}|${encode(state.suurKaare)}`;
   }
 
   private renderSource(state: BusState, slice: BusesSlice): void {
     const day = busDayTypeLabel(zonedParts(slice.now, slice.config.timeZone));
-    const text = !slice.timetable || state.schedule.level === "warning"
-      ? state.schedule.uiText || "Sõiduplaan puudub"
-      : [day, slice.timetable.sourceLabel || ""].filter(Boolean).join(" · ");
+    const text =
+      !slice.timetable || state.schedule.level === "warning"
+        ? state.schedule.uiText || "Sõiduplaan puudub"
+        : [day, slice.timetable.sourceLabel || ""].filter(Boolean).join(" · ");
     setText(this.source, text);
-    this.source.title = [day, slice.timetable?.sourceLabel, state.schedule.debugText].filter(Boolean).join(" · ");
+    this.source.title = [day, slice.timetable?.sourceLabel, state.schedule.debugText]
+      .filter(Boolean)
+      .join(" · ");
     setClass(this.source, "is-warning", state.schedule.level === "warning");
   }
 
-  private renderDirection(area: HTMLElement, items: BusDeparture[], timeZone: string, hasTimetable: boolean): void {
-    const emptyText = hasTimetable ? "Järgmisi väljumisi sõiduplaanist ei leitud." : "Bussisõiduplaani fail puudub.";
+  private renderDirection(
+    area: HTMLElement,
+    items: BusDeparture[],
+    timeZone: string,
+    hasTimetable: boolean,
+  ): void {
+    const emptyText = hasTimetable
+      ? "Järgmisi väljumisi sõiduplaanist ei leitud."
+      : "Bussisõiduplaani fail puudub.";
     if (!items.length) {
       const existing = area.firstElementChild as HTMLElement | null;
-      if (existing?.classList.contains("bus-empty") && area.childElementCount === 1) setText(existing, emptyText);
+      if (existing?.classList.contains("bus-empty") && area.childElementCount === 1)
+        setText(existing, emptyText);
       else area.replaceChildren(createElement("div", "bus-empty", emptyText));
       return;
     }
@@ -93,7 +105,12 @@ export class BusesPanel implements Panel<BusesSlice> {
     // Väljumisi uuendatakse iga minutivahetuse järel; kaardid on taaskasutatavad.
     reconcileChildren(area, items, createDepartureCard, (card, item) => {
       card.title = item.note;
-      const [day, time, line, relative] = card.children as unknown as [HTMLElement, HTMLElement, HTMLElement, HTMLElement];
+      const [day, time, line, relative] = card.children as unknown as [
+        HTMLElement,
+        HTMLElement,
+        HTMLElement,
+        HTMLElement,
+      ];
       setText(day, dayLabel(item, timeZone));
       setClass(day, "is-today", item.dayOffset === 0);
       setClass(day, "is-tomorrow", item.dayOffset === 1);

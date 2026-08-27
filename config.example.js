@@ -15,5 +15,5 @@ window.KU_CONFIG = {
   nightlyReloadHour: 4,
   nightlyReloadMinute: 10,
   buildVersion: "4.2.0",
-  buildDate: "2026-08-25"
+  buildDate: "2026-08-25",
 };

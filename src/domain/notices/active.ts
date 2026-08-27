@@ -20,5 +20,7 @@ export function activeNow(startValue: unknown, endValue: unknown, now = new Date
 }
 
 export function activeNotices<T extends NoticeLike>(notices: T[], now = new Date()): T[] {
-  return notices.filter((item) => activeNow(item.start, item.end, now)).sort((a, b) => Number(a.priority || 100) - Number(b.priority || 100));
+  return notices
+    .filter((item) => activeNow(item.start, item.end, now))
+    .sort((a, b) => Number(a.priority || 100) - Number(b.priority || 100));
 }

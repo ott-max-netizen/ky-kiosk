@@ -32,7 +32,11 @@ const VIEW_INTERVAL_MS = 8_000;
  * nii et C-19 kolm vaadet liiguvad alati edasi.
  */
 const MAX_PAUSE_MS = 60_000;
-const VIEW_LABELS = ["Viimase kuu näitajad", "Viimase 12 kuu trendid", "Jooksva aasta koondnäitajad"] as const;
+const VIEW_LABELS = [
+  "Viimase kuu näitajad",
+  "Viimase 12 kuu trendid",
+  "Jooksva aasta koondnäitajad",
+] as const;
 const SERIES_CLASS: Record<HouseMetricKey, string> = {
   waterM3: "house-water",
   heatMWh: "house-heat",
@@ -64,7 +68,9 @@ function formatMetricValue(metric: HouseMetric, value: number | null | undefined
 function formatLatestPeriod(month: HouseMonth | null): string {
   if (!month) return "";
   const name = String(month.monthName || "").trim();
-  const monthName = name ? name.charAt(0).toLocaleUpperCase("et-EE") + name.slice(1).toLocaleLowerCase("et-EE") : "";
+  const monthName = name
+    ? name.charAt(0).toLocaleUpperCase("et-EE") + name.slice(1).toLocaleLowerCase("et-EE")
+    : "";
   return `${monthName} ${month.year}`.trim();
 }
 
@@ -193,11 +199,12 @@ export class HousePanel implements Panel<HouseSlice> {
   }
 
   private buildView(index: HouseViewIndex): HTMLElement {
-    const view = index === 0
-      ? this.renderCurrentMonthView()
-      : index === 1
-        ? this.renderTrendView()
-        : this.renderYearSummaryView();
+    const view =
+      index === 0
+        ? this.renderCurrentMonthView()
+        : index === 1
+          ? this.renderTrendView()
+          : this.renderYearSummaryView();
     view.classList.add("house-view");
     view.setAttribute("role", "group");
     view.setAttribute("aria-label", VIEW_LABELS[index]);
@@ -221,7 +228,10 @@ export class HousePanel implements Panel<HouseSlice> {
   }
 
   private updateIndicator(): void {
-    this.indicator.setAttribute("aria-label", `Vaade ${this.activeView + 1} kolmest: ${VIEW_LABELS[this.activeView]}`);
+    this.indicator.setAttribute(
+      "aria-label",
+      `Vaade ${this.activeView + 1} kolmest: ${VIEW_LABELS[this.activeView]}`,
+    );
     const dots = reconcileCount(this.indicator, 3, () => {
       const dot = createElement("span", "house-view-dot");
       dot.setAttribute("aria-hidden", "true");
@@ -243,7 +253,11 @@ export class HousePanel implements Panel<HouseSlice> {
       const identity = createElement("div", `house-kpi-identity ${SERIES_CLASS[metric.key]}`);
       identity.append(this.renderMetricIcon(metric), createElement("span", "house-kpi-label", metric.label));
       const value = createElement("div", "house-kpi-value numeric", formatMetricValue(metric, current));
-      const changeEl = createElement("div", `house-kpi-change numeric ${metricChangeClass(metric, change)}`, metricChangeLabel(change));
+      const changeEl = createElement(
+        "div",
+        `house-kpi-change numeric ${metricChangeClass(metric, change)}`,
+        metricChangeLabel(change),
+      );
       changeEl.title = previous ? "Muutus võrreldes eelmise kuuga" : "Eelmise kuu andmed puuduvad";
       row.append(identity, value, changeEl);
       root.appendChild(row);
@@ -257,8 +271,15 @@ export class HousePanel implements Panel<HouseSlice> {
     for (const metric of HOUSE_METRICS) {
       const row = createElement("div", "house-trend-row");
       const identity = createElement("div", `house-trend-identity ${SERIES_CLASS[metric.key]}`);
-      identity.append(this.renderMetricIcon(metric), createElement("span", "house-trend-label", metric.label));
-      const latestValue = [...months].reverse().map((item) => item[metric.key]).find((value) => value !== null && value !== undefined) ?? null;
+      identity.append(
+        this.renderMetricIcon(metric),
+        createElement("span", "house-trend-label", metric.label),
+      );
+      const latestValue =
+        [...months]
+          .reverse()
+          .map((item) => item[metric.key])
+          .find((value) => value !== null && value !== undefined) ?? null;
       const value = createElement("div", "house-trend-value numeric", formatMetricValue(metric, latestValue));
       row.append(identity, value, this.renderSparkline(months, metric));
       root.appendChild(row);
@@ -279,10 +300,24 @@ export class HousePanel implements Panel<HouseSlice> {
       const row = createElement("div", "house-year-row");
       const identity = createElement("div", `house-year-identity ${SERIES_CLASS[metric.key]}`);
       identity.append(this.renderMetricIcon(metric), createElement("span", "house-year-label", metric.label));
-      row.append(identity, createElement("div", "house-year-value numeric", formatMetricValue(metric, summary.totals[metric.key])));
+      row.append(
+        identity,
+        createElement(
+          "div",
+          "house-year-value numeric",
+          formatMetricValue(metric, summary.totals[metric.key]),
+        ),
+      );
       rows.appendChild(row);
     }
-    root.append(rows, createElement("div", "house-year-meta numeric", `Andmed: ${summary.monthCount} ${summary.monthCount === 1 ? "kuu" : "kuud"}`));
+    root.append(
+      rows,
+      createElement(
+        "div",
+        "house-year-meta numeric",
+        `Andmed: ${summary.monthCount} ${summary.monthCount === 1 ? "kuu" : "kuud"}`,
+      ),
+    );
     return root;
   }
 
@@ -297,13 +332,15 @@ export class HousePanel implements Panel<HouseSlice> {
     svg.classList.add("house-sparkline", SERIES_CLASS[metric.key]);
     svg.setAttribute("aria-label", `${metric.label}, viimase ${months.length} kuu trend`);
     const values = months.map((month) => month[metric.key]);
-    const numeric = values.filter((value): value is number => value !== null && value !== undefined && Number.isFinite(value));
+    const numeric = values.filter(
+      (value): value is number => value !== null && value !== undefined && Number.isFinite(value),
+    );
     if (!numeric.length) return svg;
     const min = Math.min(...numeric);
     const max = Math.max(...numeric);
     const range = Math.max(0.0001, max - min);
-    const xFor = (index: number) => months.length <= 1 ? 50 : (index / (months.length - 1)) * 100;
-    const yFor = (value: number) => max === min ? 12 : 21 - ((value - min) / range) * 18;
+    const xFor = (index: number) => (months.length <= 1 ? 50 : (index / (months.length - 1)) * 100);
+    const yFor = (value: number) => (max === min ? 12 : 21 - ((value - min) / range) * 18);
 
     let segment: string[] = [];
     const flushSegment = () => {
@@ -334,7 +371,9 @@ export class HousePanel implements Panel<HouseSlice> {
     for (let index = values.length - 1; index >= 0; index -= 1) {
       const value = values[index];
       if (value === null || value === undefined || !Number.isFinite(value)) continue;
-      svg.appendChild(svgElement("circle", { cx: xFor(index), cy: yFor(value), r: 2.1, class: "house-spark-last" }));
+      svg.appendChild(
+        svgElement("circle", { cx: xFor(index), cy: yFor(value), r: 2.1, class: "house-spark-last" }),
+      );
       break;
     }
     return svg;

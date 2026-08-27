@@ -7,7 +7,14 @@ describe("pika tööaja ajastaja", () => {
     vi.useFakeTimers();
     const setIntervalSpy = vi.spyOn(window, "setInterval");
     const scheduler = new Scheduler();
-    for (const name of ["clock", "time-sensitive", "watchdog", "maintenance", "debug", "pixel-shift"] as const) {
+    for (const name of [
+      "clock",
+      "time-sensitive",
+      "watchdog",
+      "maintenance",
+      "debug",
+      "pixel-shift",
+    ] as const) {
       scheduler.register(name, 1000, () => undefined);
     }
     scheduler.start();

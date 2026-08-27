@@ -56,26 +56,45 @@ export function parseRuntimeConfig(value: unknown): RuntimeConfig {
     feedToken: textValue(source.feedToken),
     scale: numberValue(source.scale, DEFAULT_CONFIG.scale, MIN_RUNTIME_SCALE, 1.4),
     refreshMinutes: numberValue(source.refreshMinutes, DEFAULT_CONFIG.refreshMinutes, 1, 60),
-    noticeRotationSeconds: numberValue(source.noticeRotationSeconds, DEFAULT_CONFIG.noticeRotationSeconds, 6, 120),
+    noticeRotationSeconds: numberValue(
+      source.noticeRotationSeconds,
+      DEFAULT_CONFIG.noticeRotationSeconds,
+      6,
+      120,
+    ),
     listRotationSeconds: numberValue(source.listRotationSeconds, DEFAULT_CONFIG.listRotationSeconds, 8, 300),
     maxContacts: Math.round(numberValue(source.maxContacts, DEFAULT_CONFIG.maxContacts, 1, 8)),
     maxEmergency: Math.round(numberValue(source.maxEmergency, DEFAULT_CONFIG.maxEmergency, 1, 8)),
     maxWaste: Math.round(numberValue(source.maxWaste, DEFAULT_CONFIG.maxWaste, 1, 10)),
     wasteWindowDays: Math.round(numberValue(source.wasteWindowDays, DEFAULT_CONFIG.wasteWindowDays, 1, 90)),
     timeZone: textValue(source.timeZone, DEFAULT_CONFIG.timeZone),
-    nightThemeStartHour: Math.round(numberValue(source.nightThemeStartHour, DEFAULT_CONFIG.nightThemeStartHour, 0, 23)),
-    nightThemeEndHour: Math.round(numberValue(source.nightThemeEndHour, DEFAULT_CONFIG.nightThemeEndHour, 0, 23)),
-    nightlyReloadHour: Math.round(numberValue(source.nightlyReloadHour, DEFAULT_CONFIG.nightlyReloadHour, 0, 23)),
-    nightlyReloadMinute: Math.round(numberValue(source.nightlyReloadMinute, DEFAULT_CONFIG.nightlyReloadMinute, 0, 59)),
+    nightThemeStartHour: Math.round(
+      numberValue(source.nightThemeStartHour, DEFAULT_CONFIG.nightThemeStartHour, 0, 23),
+    ),
+    nightThemeEndHour: Math.round(
+      numberValue(source.nightThemeEndHour, DEFAULT_CONFIG.nightThemeEndHour, 0, 23),
+    ),
+    nightlyReloadHour: Math.round(
+      numberValue(source.nightlyReloadHour, DEFAULT_CONFIG.nightlyReloadHour, 0, 23),
+    ),
+    nightlyReloadMinute: Math.round(
+      numberValue(source.nightlyReloadMinute, DEFAULT_CONFIG.nightlyReloadMinute, 0, 59),
+    ),
     buildVersion: textValue(source.buildVersion, DEFAULT_CONFIG.buildVersion),
     buildDate: textValue(source.buildDate, DEFAULT_CONFIG.buildDate),
   };
 }
 
 export function endpointConfigured(config: RuntimeConfig): boolean {
-  return /^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec(?:\?.*)?$/.test(config.appsScriptUrl);
+  return /^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec(?:\?.*)?$/.test(
+    config.appsScriptUrl,
+  );
 }
 
 export function tokenConfigured(config: RuntimeConfig): boolean {
-  return config.feedToken.length >= 16 && !config.feedToken.includes("_SIIA_") && !/^REPLACE_/i.test(config.feedToken);
+  return (
+    config.feedToken.length >= 16 &&
+    !config.feedToken.includes("_SIIA_") &&
+    !/^REPLACE_/i.test(config.feedToken)
+  );
 }

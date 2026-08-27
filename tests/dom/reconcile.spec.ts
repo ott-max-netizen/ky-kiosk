@@ -29,14 +29,24 @@ describe("reconcileChildren", () => {
   });
 
   it("creates only the missing rows and reuses the existing ones", () => {
-    reconcileChildren(container, [1, 2, 3], () => document.createElement("span"), (element, item) => {
-      element.textContent = String(item);
-    });
+    reconcileChildren(
+      container,
+      [1, 2, 3],
+      () => document.createElement("span"),
+      (element, item) => {
+        element.textContent = String(item);
+      },
+    );
     expect(container.children).toHaveLength(3);
     const first = container.children[0];
-    reconcileChildren(container, [4, 5, 6], () => document.createElement("span"), (element, item) => {
-      element.textContent = String(item);
-    });
+    reconcileChildren(
+      container,
+      [4, 5, 6],
+      () => document.createElement("span"),
+      (element, item) => {
+        element.textContent = String(item);
+      },
+    );
     expect(container.children).toHaveLength(3);
     // Sama sõlm, uus sisu — see ongi lepitaja mõte.
     expect(container.children[0]).toBe(first);
@@ -44,15 +54,35 @@ describe("reconcileChildren", () => {
   });
 
   it("removes the surplus when the list shrinks", () => {
-    reconcileChildren(container, [1, 2, 3, 4, 5], () => document.createElement("span"), () => undefined);
-    reconcileChildren(container, [1, 2], () => document.createElement("span"), () => undefined);
+    reconcileChildren(
+      container,
+      [1, 2, 3, 4, 5],
+      () => document.createElement("span"),
+      () => undefined,
+    );
+    reconcileChildren(
+      container,
+      [1, 2],
+      () => document.createElement("span"),
+      () => undefined,
+    );
     expect(container.children).toHaveLength(2);
   });
 
   it("creates nothing when the list length is unchanged", () => {
-    reconcileChildren(container, [1, 2, 3], () => document.createElement("span"), () => undefined);
+    reconcileChildren(
+      container,
+      [1, 2, 3],
+      () => document.createElement("span"),
+      () => undefined,
+    );
     const created = countCreated(() =>
-      reconcileChildren(container, [7, 8, 9], () => document.createElement("span"), () => undefined),
+      reconcileChildren(
+        container,
+        [7, 8, 9],
+        () => document.createElement("span"),
+        () => undefined,
+      ),
     );
     expect(created).toBe(0);
   });
@@ -139,18 +169,29 @@ describe("roteeruvad paneelid ei ehita DOM-i uuesti", () => {
     const panel = new HousePanel();
     const data = createFallbackData();
     data.house = {
-      months: [{ year: 2026, month: 1, monthName: "Jaanuar", key: "2026-01", waterM3: 1, heatMWh: 1, electricityKWh: 1, solarKWh: 1 }],
+      months: [
+        {
+          year: 2026,
+          month: 1,
+          monthName: "Jaanuar",
+          key: "2026-01",
+          waterM3: 1,
+          heatMWh: 1,
+          electricityKWh: 1,
+          solarKWh: 1,
+        },
+      ],
     };
     panel.update({ data, timeZone: "Europe/Tallinn" });
     document.getElementById("houseArea")?.dispatchEvent(new Event("pointerenter"));
-    const activeBefore = [...document.querySelectorAll("#houseViewIndicator .house-view-dot")].findIndex((dot) =>
-      dot.classList.contains("is-active"),
+    const activeBefore = [...document.querySelectorAll("#houseViewIndicator .house-view-dot")].findIndex(
+      (dot) => dot.classList.contains("is-active"),
     );
     // Ilma pausi ülempiirita jääks rotatsioon siia igaveseks seisma (C-19).
     panel.tick(Date.now() + 120_000);
     panel.tick(Date.now() + 140_000);
-    const activeAfter = [...document.querySelectorAll("#houseViewIndicator .house-view-dot")].findIndex((dot) =>
-      dot.classList.contains("is-active"),
+    const activeAfter = [...document.querySelectorAll("#houseViewIndicator .house-view-dot")].findIndex(
+      (dot) => dot.classList.contains("is-active"),
     );
     expect(activeAfter).not.toBe(activeBefore);
   });

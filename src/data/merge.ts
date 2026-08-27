@@ -67,12 +67,20 @@ function deepEqual(left: unknown, right: unknown): boolean {
     const leftKeys = Object.keys(leftRecord);
     const rightKeys = Object.keys(rightRecord);
     if (leftKeys.length !== rightKeys.length) return false;
-    return leftKeys.every((key) => Object.prototype.hasOwnProperty.call(rightRecord, key) && deepEqual(leftRecord[key], rightRecord[key]));
+    return leftKeys.every(
+      (key) =>
+        Object.prototype.hasOwnProperty.call(rightRecord, key) &&
+        deepEqual(leftRecord[key], rightRecord[key]),
+    );
   }
   return false;
 }
 
-function withChangedVersion(versions: SectionVersions, key: keyof SectionVersions, changed: boolean): SectionVersions {
+function withChangedVersion(
+  versions: SectionVersions,
+  key: keyof SectionVersions,
+  changed: boolean,
+): SectionVersions {
   if (!changed) return versions;
   return { ...versions, [key]: versions[key] + 1 };
 }

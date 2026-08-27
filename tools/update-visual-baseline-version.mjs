@@ -15,6 +15,12 @@ for (const name of required) {
   if (!existsSync(path)) throw new Error(`Visuaalbaseline puudub: ${name}`);
 }
 writeFileSync(new URL("build-version.txt", snapshotDir), `${packageJson.version}\n`, "utf8");
-copyFileSync(new URL("demo-with-notices.png", snapshotDir), new URL("../demo-1920x1080.png", import.meta.url));
-copyFileSync(new URL("demo-without-notices.png", snapshotDir), new URL("../demo-no-notices-1920x1080.png", import.meta.url));
+copyFileSync(
+  new URL("demo-with-notices.png", snapshotDir),
+  new URL("../demo-1920x1080.png", import.meta.url),
+);
+copyFileSync(
+  new URL("demo-without-notices.png", snapshotDir),
+  new URL("../demo-no-notices-1920x1080.png", import.meta.url),
+);
 console.log(`Visuaalbaseline'id märgitud versioonile ${packageJson.version}.`);

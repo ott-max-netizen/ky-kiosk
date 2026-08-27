@@ -93,26 +93,62 @@ export class AppView {
     const now = new Date();
     if (force || next.versions.settings !== previousVersions.settings) this.updateStaticHeader(next);
     if (force || next.versions.notices !== previousVersions.notices) {
-      this.notices.update({ items: next.data.notices, now, rotationMs: this.config.noticeRotationSeconds * 1000 });
+      this.notices.update({
+        items: next.data.notices,
+        now,
+        rotationMs: this.config.noticeRotationSeconds * 1000,
+      });
     }
-    if (force || next.versions.weather !== previousVersions.weather || next.versions.status !== previousVersions.status) {
+    if (
+      force ||
+      next.versions.weather !== previousVersions.weather ||
+      next.versions.status !== previousVersions.status
+    ) {
       this.weather.update({ data: next.data, timeZone });
     }
-    if (force || next.versions.house !== previousVersions.house || next.versions.status !== previousVersions.status) {
+    if (
+      force ||
+      next.versions.house !== previousVersions.house ||
+      next.versions.status !== previousVersions.status
+    ) {
       this.house.update({ data: next.data, timeZone });
     }
     if (force || next.versions.waste !== previousVersions.waste) this.updateWaste(now, timeZone);
     if (force || next.versions.contacts !== previousVersions.contacts) {
-      this.contacts.update({ items: next.data.contacts, pageSize: this.config.maxContacts, nowMs: now.getTime(), rotationMs: this.config.listRotationSeconds * 1000 });
+      this.contacts.update({
+        items: next.data.contacts,
+        pageSize: this.config.maxContacts,
+        nowMs: now.getTime(),
+        rotationMs: this.config.listRotationSeconds * 1000,
+      });
     }
     if (force || next.versions.emergency !== previousVersions.emergency) {
-      this.emergency.update({ items: next.data.emergency, pageSize: this.config.maxEmergency, nowMs: now.getTime(), rotationMs: this.config.listRotationSeconds * 1000 });
+      this.emergency.update({
+        items: next.data.emergency,
+        pageSize: this.config.maxEmergency,
+        nowMs: now.getTime(),
+        rotationMs: this.config.listRotationSeconds * 1000,
+      });
     }
-    if (force || next.versions.electricity !== previousVersions.electricity || next.versions.status !== previousVersions.status) {
+    if (
+      force ||
+      next.versions.electricity !== previousVersions.electricity ||
+      next.versions.status !== previousVersions.status
+    ) {
       this.electricity.update({ data: next.data, now, timeZone });
     }
-    if (force || next.versions.fuel !== previousVersions.fuel || next.versions.status !== previousVersions.status) this.fuel.update({ data: next.data, timeZone });
-    if (force || next.versions.euribor !== previousVersions.euribor || next.versions.status !== previousVersions.status) this.euribor.update({ data: next.data, timeZone });
+    if (
+      force ||
+      next.versions.fuel !== previousVersions.fuel ||
+      next.versions.status !== previousVersions.status
+    )
+      this.fuel.update({ data: next.data, timeZone });
+    if (
+      force ||
+      next.versions.euribor !== previousVersions.euribor ||
+      next.versions.status !== previousVersions.status
+    )
+      this.euribor.update({ data: next.data, timeZone });
     if (force || next.versions.status !== previousVersions.status) this.marketSummary.update(next.data);
     this.statusBar.update({ state: next, config: this.config, timeZone });
     this.staleBanner.update({ data: next.data, nowMs: now.getTime() });
@@ -145,7 +181,11 @@ export class AppView {
     }
     if (dateKey !== this.lastDateKey) {
       this.lastDateKey = dateKey;
-      this.notices.update({ items: this.state.data.notices, now, rotationMs: this.config.noticeRotationSeconds * 1000 });
+      this.notices.update({
+        items: this.state.data.notices,
+        now,
+        rotationMs: this.config.noticeRotationSeconds * 1000,
+      });
       this.updateWaste(now, timeZone);
       this.staleBanner.update({ data: this.state.data, nowMs: now.getTime() });
     }
@@ -156,7 +196,13 @@ export class AppView {
     // Ilma selle väravata arvutati bussigraafiku olek ja ajavööndi osad iga 10 s
     // ja iga oleku uuenduse peale ka siis, kui overlay on välja lülitatud.
     if (!this.debugMode) {
-      this.debug.update({ state: this.state, config: this.config, enabled: false, schedulerNames: [], busDebug: "" });
+      this.debug.update({
+        state: this.state,
+        config: this.config,
+        enabled: false,
+        schedulerNames: [],
+        busDebug: "",
+      });
       return;
     }
     const timeZone = this.state.data.settings.timeZone || this.config.timeZone;
@@ -199,7 +245,10 @@ export class AppView {
     setHidden(address, !settings.buildingAddress.trim());
     setText(requireElement("weatherPlace"), settings.weatherLocation || "Viljandi");
     setText(requireElement("wasteWindowLabel"), String(this.config.wasteWindowDays));
-    setText(requireElement("buildLabel"), `v${this.config.buildVersion || "dev"} · ${this.config.buildDate || "–"}`);
+    setText(
+      requireElement("buildLabel"),
+      `v${this.config.buildVersion || "dev"} · ${this.config.buildDate || "–"}`,
+    );
   }
 
   private updateWaste(now: Date, timeZone: string): void {

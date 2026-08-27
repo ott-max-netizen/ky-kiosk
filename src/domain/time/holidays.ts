@@ -1,6 +1,16 @@
 import { addCalendarDays, type CalendarDate, sameCalendarDate } from "./zoned";
 
-const FIXED_HOLIDAYS = new Set(["01-01", "02-24", "05-01", "06-23", "06-24", "08-20", "12-24", "12-25", "12-26"]);
+const FIXED_HOLIDAYS = new Set([
+  "01-01",
+  "02-24",
+  "05-01",
+  "06-23",
+  "06-24",
+  "08-20",
+  "12-24",
+  "12-25",
+  "12-26",
+]);
 
 export function easterSundayParts(year: number): CalendarDate {
   const a = year % 19;

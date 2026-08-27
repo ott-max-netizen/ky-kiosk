@@ -84,7 +84,11 @@ function paginate(body: HTMLElement, clone: HTMLElement, text: string, fontPx: n
   return pages;
 }
 
-export function fitNoticeToPages(notice: Notice, sourceCard: HTMLElement, sourceBody: HTMLElement): NoticePage[] {
+export function fitNoticeToPages(
+  notice: Notice,
+  sourceCard: HTMLElement,
+  sourceBody: HTMLElement,
+): NoticePage[] {
   const rect = sourceCard.getBoundingClientRect();
   const width = Math.max(1, rect.width || sourceCard.clientWidth);
   const height = Math.max(1, rect.height || sourceCard.clientHeight);
@@ -108,8 +112,9 @@ export function fitNoticeToPages(notice: Notice, sourceCard: HTMLElement, source
 
   const basePx = Number.parseFloat(getComputedStyle(sourceBody).fontSize) || cssLengthPx("--fs-b", 23);
   const minimumPx = cssLengthPx("--fs-b", 23);
-  const candidates = [basePx, Math.max(minimumPx, basePx * 0.94), Math.max(minimumPx, basePx * 0.88)]
-    .filter((value, index, values) => values.findIndex((other) => Math.abs(other - value) < 0.1) === index);
+  const candidates = [basePx, Math.max(minimumPx, basePx * 0.94), Math.max(minimumPx, basePx * 0.88)].filter(
+    (value, index, values) => values.findIndex((other) => Math.abs(other - value) < 0.1) === index,
+  );
 
   let pages: NoticePage[] = [];
   try {

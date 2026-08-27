@@ -6,7 +6,7 @@
    * 1 rem = 16.4 px; pikslisamm 0.3113 mm; versaali kõrgus ~= 0.7 x kirja kõrgus.
    * A >= 34.4 px / 1.5 m, B >= 23 px / 1.0 m, C >= 17.2 px / 0.75 m, D >= 12.3 px / 0.5 m.
    */
-  --fs-a: 2.10rem;
+  --fs-a: 2.1rem;
   --fs-b: 1.41rem;
   --fs-c: 1.05rem;
   --fs-d: 0.75rem;

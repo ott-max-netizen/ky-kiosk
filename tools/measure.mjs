@@ -29,8 +29,14 @@ function bundleSizes() {
   const out = { jsBytes: 0, jsGzipBytes: 0, cssBytes: 0, cssGzipBytes: 0, htmlBytes: 0, htmlGzipBytes: 0 };
   for (const name of readdirSync(assets)) {
     const buffer = readFileSync(join(assets, name));
-    if (name.endsWith(".js")) { out.jsBytes += buffer.length; out.jsGzipBytes += gzipSync(buffer).length; }
-    if (name.endsWith(".css")) { out.cssBytes += buffer.length; out.cssGzipBytes += gzipSync(buffer).length; }
+    if (name.endsWith(".js")) {
+      out.jsBytes += buffer.length;
+      out.jsGzipBytes += gzipSync(buffer).length;
+    }
+    if (name.endsWith(".css")) {
+      out.cssBytes += buffer.length;
+      out.cssGzipBytes += gzipSync(buffer).length;
+    }
   }
   const html = readFileSync(join(root, "dist", "index.html"));
   out.htmlBytes = html.length;
@@ -83,17 +89,33 @@ const SNAPSHOT = `(() => {
 })()`;
 
 async function waitIdle(page) {
-  await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r()))));
+  await page.evaluate(
+    () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r()))),
+  );
 }
 
-const preview = spawn("npx", ["vite", "preview", "--host", "127.0.0.1", "--port", String(PORT), "--strictPort"], {
-  cwd: root, stdio: "ignore", detached: false,
-});
-const stop = () => { try { preview.kill("SIGTERM"); } catch { /* juba lõpetatud */ } };
+const preview = spawn(
+  "npx",
+  ["vite", "preview", "--host", "127.0.0.1", "--port", String(PORT), "--strictPort"],
+  {
+    cwd: root,
+    stdio: "ignore",
+    detached: false,
+  },
+);
+const stop = () => {
+  try {
+    preview.kill("SIGTERM");
+  } catch {
+    /* juba lõpetatud */
+  }
+};
 process.on("exit", stop);
 
 const browser = await chromium.launch(
-  process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE } : {},
+  process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE
+    ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE }
+    : {},
 );
 const results = { bundle: bundleSizes(), hours };
 try {
@@ -112,18 +134,30 @@ try {
 
   // Oota, kuni eelvaateserver vastab.
   for (let attempt = 0; attempt < 60; attempt += 1) {
-    try { await page.goto(`http://127.0.0.1:${PORT}/?demo=1`, { waitUntil: "commit", timeout: 2000 }); break; }
-    catch { await new Promise((r) => setTimeout(r, 500)); }
+    try {
+      await page.goto(`http://127.0.0.1:${PORT}/?demo=1`, { waitUntil: "commit", timeout: 2000 });
+      break;
+    } catch {
+      await new Promise((r) => setTimeout(r, 500));
+    }
   }
 
   const started = Date.now();
-  await page.waitForFunction(() => document.querySelector("#clock")?.textContent !== "--:--", null, { timeout: 20_000 });
-  await page.waitForFunction(() => (document.querySelector("#noticeArea")?.textContent ?? "").length > 0, null, { timeout: 20_000 });
+  await page.waitForFunction(() => document.querySelector("#clock")?.textContent !== "--:--", null, {
+    timeout: 20_000,
+  });
+  await page.waitForFunction(
+    () => (document.querySelector("#noticeArea")?.textContent ?? "").length > 0,
+    null,
+    { timeout: 20_000 },
+  );
   await waitIdle(page);
   results.firstRenderMs = Date.now() - started;
   results.navigation = await page.evaluate(() => {
     const nav = performance.getEntriesByType("navigation")[0];
-    return nav ? { domContentLoadedMs: Math.round(nav.domContentLoadedEventEnd), loadMs: Math.round(nav.loadEventEnd) } : null;
+    return nav
+      ? { domContentLoadedMs: Math.round(nav.domContentLoadedEventEnd), loadMs: Math.round(nav.loadEventEnd) }
+      : null;
   });
   results.initial = await page.evaluate(SNAPSHOT);
   results.initial.heapBytes = (await cdp.send("Runtime.getHeapUsage")).usedSize;
@@ -148,7 +182,9 @@ try {
     const snapshot = await page.evaluate(SNAPSHOT);
     snapshot.heapBytes = (await cdp.send("Runtime.getHeapUsage")).usedSize;
     results.timeline.push({ hours: mark, ...snapshot });
-    console.log(`  ${String(mark).padStart(3)} h  DOM ${snapshot.totalNodes}  SVG ${snapshot.svgNodes}  created ${snapshot.elementsCreated}  svgCreated ${snapshot.svgElementsCreated}  reflows ${snapshot.forcedReflows}  heap ${Math.round(snapshot.heapBytes / 1024)} kB`);
+    console.log(
+      `  ${String(mark).padStart(3)} h  DOM ${snapshot.totalNodes}  SVG ${snapshot.svgNodes}  created ${snapshot.elementsCreated}  svgCreated ${snapshot.svgElementsCreated}  reflows ${snapshot.forcedReflows}  heap ${Math.round(snapshot.heapBytes / 1024)} kB`,
+    );
   }
   results.final = results.timeline.at(-1);
   await context.close();

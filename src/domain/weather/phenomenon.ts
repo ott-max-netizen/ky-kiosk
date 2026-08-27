@@ -35,10 +35,16 @@ export const WEATHER_PHENOMENON_TRANSLATIONS: Readonly<Record<string, string>> =
   "freezing rain": "Jäävihm",
 };
 
-const ESTONIAN_VALUES = new Set(Object.values(WEATHER_PHENOMENON_TRANSLATIONS).map((value) => normalizePhenomenon(value)));
+const ESTONIAN_VALUES = new Set(
+  Object.values(WEATHER_PHENOMENON_TRANSLATIONS).map((value) => normalizePhenomenon(value)),
+);
 
 export function normalizePhenomenon(value: unknown): string {
-  return String(value ?? "").trim().toLocaleLowerCase("et-EE").replace(/[^a-z0-9õäöüšž]+/g, " ").trim();
+  return String(value ?? "")
+    .trim()
+    .toLocaleLowerCase("et-EE")
+    .replace(/[^a-z0-9õäöüšž]+/g, " ")
+    .trim();
 }
 
 export function weatherPhenomenonEt(value: unknown): string {

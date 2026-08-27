@@ -1,5 +1,12 @@
-* { box-sizing: border-box; }
-html, body { margin: 0; width: 100%; height: 100%; }
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+}
 body {
   overflow: hidden;
   background: var(--bg);
@@ -48,7 +55,9 @@ body {
   gap: 1.4rem;
   min-width: 0;
 }
-.identity { min-width: 0; }
+.identity {
+  min-width: 0;
+}
 .eyebrow,
 .section-kicker,
 .subsection-label {
@@ -60,7 +69,7 @@ body {
 }
 .identity h1 {
   margin: 0.12rem 0 0.08rem;
-  font-size: 2.10rem;
+  font-size: 2.1rem;
   line-height: 1;
   font-weight: 800;
   letter-spacing: -0.02em;
@@ -71,9 +80,12 @@ body {
   font-weight: 600;
   color: var(--text);
 }
-.clock-block { text-align: right; min-width: 15rem; }
+.clock-block {
+  text-align: right;
+  min-width: 15rem;
+}
 .clock {
-  font-size: 2.40rem;
+  font-size: 2.4rem;
   line-height: 0.92;
   font-weight: 800;
   letter-spacing: -0.04em;
@@ -100,5 +112,6 @@ body {
   line-height: 1.15;
   font-weight: 600;
 }
-.stale-banner[hidden] { display: none; }
-
+.stale-banner[hidden] {
+  display: none;
+}

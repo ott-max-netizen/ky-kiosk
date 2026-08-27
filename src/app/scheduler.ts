@@ -1,4 +1,10 @@
-export type ScheduledTaskName = "clock" | "time-sensitive" | "watchdog" | "maintenance" | "debug" | "pixel-shift";
+export type ScheduledTaskName =
+  | "clock"
+  | "time-sensitive"
+  | "watchdog"
+  | "maintenance"
+  | "debug"
+  | "pixel-shift";
 
 interface ScheduledTask {
   name: ScheduledTaskName;
@@ -26,7 +32,12 @@ export class Scheduler {
   private onError: (name: ScheduledTaskName, error: unknown) => void = (name, error) =>
     console.error(`Ajastatud toiming ${name} ebaõnnestus`, error);
 
-  register(name: ScheduledTaskName, intervalMs: number, callback: () => void | Promise<void>, runImmediately = false): void {
+  register(
+    name: ScheduledTaskName,
+    intervalMs: number,
+    callback: () => void | Promise<void>,
+    runImmediately = false,
+  ): void {
     const now = Date.now();
     const interval = Math.max(250, intervalMs);
     this.tasks.set(name, {

@@ -1,5 +1,9 @@
 import type { DashboardData, ElectricityPoint } from "../../data/types";
-import { electricityDateIsToday, marketCurrentIndex, priceToCentsPerKwh } from "../../domain/electricity/price";
+import {
+  electricityDateIsToday,
+  marketCurrentIndex,
+  priceToCentsPerKwh,
+} from "../../domain/electricity/price";
 import { ElectricityChart } from "../charts/electricity-chart";
 import { createElement, formatNumber, requireElement, setHidden, setText } from "../dom";
 import { reconcileChildren } from "../reconcile";
@@ -53,7 +57,8 @@ export class MarketElectricityPanel implements Panel<ElectricitySlice> {
       this.setCurrent(null);
       this.chart.update([], -1);
       const existing = this.stats.firstElementChild as HTMLElement | null;
-      if (existing?.classList.contains("market-empty") && this.stats.childElementCount === 1) setText(existing, "Elektrihind puudub");
+      if (existing?.classList.contains("market-empty") && this.stats.childElementCount === 1)
+        setText(existing, "Elektrihind puudub");
       else this.stats.replaceChildren(createElement("div", "market-empty", "Elektrihind puudub"));
       this.applyStale(slice.data);
       return;
@@ -63,7 +68,10 @@ export class MarketElectricityPanel implements Panel<ElectricitySlice> {
     const currentIndex = today ? marketCurrentIndex(points, slice.now) : -1;
     const currentPoint = currentIndex >= 0 ? points[currentIndex] : undefined;
     const tariff = currentPoint?.tariffLabelEt || value.currentTariffLabelEt || "";
-    setText(this.meta, [formatDateValue(value.date, "dayMonth", slice.timeZone), tariff, "KM 24%"].filter(Boolean).join(" · "));
+    setText(
+      this.meta,
+      [formatDateValue(value.date, "dayMonth", slice.timeZone), tariff, "KM 24%"].filter(Boolean).join(" · "),
+    );
     this.setCurrent(today && currentPoint ? currentPoint.price : null);
     if (!today) this.current.title = "Tänase päeva elektrihind pole veel saadaval";
     else this.current.removeAttribute("title");
@@ -80,7 +88,10 @@ export class MarketElectricityPanel implements Panel<ElectricitySlice> {
       stats,
       () => {
         const item = createElement("div", "market-stat");
-        item.append(createElement("span", "market-stat-label"), createElement("strong", "market-stat-value numeric"));
+        item.append(
+          createElement("span", "market-stat-label"),
+          createElement("strong", "market-stat-value numeric"),
+        );
         return item;
       },
       (item, [label, number]) => {
@@ -89,7 +100,9 @@ export class MarketElectricityPanel implements Panel<ElectricitySlice> {
       },
     );
     const updated = sectionUpdatedTime(slice.data, "electricity", slice.timeZone);
-    const sourceText = value.tariffSource ? "Elering + Elekter · muutuvtasud · püsitasudeta" : "Elering · Nord Pool · s/kWh koos 24% KM-ga";
+    const sourceText = value.tariffSource
+      ? "Elering + Elekter · muutuvtasud · püsitasudeta"
+      : "Elering · Nord Pool · s/kWh koos 24% KM-ga";
     setText(this.source, [sourceText, updated ? `andmed ${updated}` : ""].filter(Boolean).join(" · "));
     this.applyStale(slice.data);
   }
@@ -121,6 +134,9 @@ export class MarketElectricityPanel implements Panel<ElectricitySlice> {
     const stale = Boolean(error) || age > 86_400_000;
     this.card.classList.toggle("is-stale", stale);
     this.stale.hidden = !stale;
-    setText(this.stale, stale ? (error ? "vahemälust" : `${Math.max(1, Math.floor(age / 86_400_000))} p vana`) : "");
+    setText(
+      this.stale,
+      stale ? (error ? "vahemälust" : `${Math.max(1, Math.floor(age / 86_400_000))} p vana`) : "",
+    );
   }
 }

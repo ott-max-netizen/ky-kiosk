@@ -42,5 +42,7 @@ export class DebugOverlay {
     setText(this.element, lines.join("\n"));
   }
 
-  destroy(): void { this.mounted = false; }
+  destroy(): void {
+    this.mounted = false;
+  }
 }

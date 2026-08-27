@@ -24,15 +24,33 @@ export function getFormatters(timeZone = "Europe/Tallinn"): AppFormatters {
   const cached = cache.get(zone);
   if (cached) return cached;
   const result: AppFormatters = {
-    clock: new Intl.DateTimeFormat("et-EE", { timeZone: zone, hour: "2-digit", minute: "2-digit", second: "2-digit" }),
-    dateLong: new Intl.DateTimeFormat("et-EE", { timeZone: zone, weekday: "long", day: "numeric", month: "long", year: "numeric" }),
+    clock: new Intl.DateTimeFormat("et-EE", {
+      timeZone: zone,
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    }),
+    dateLong: new Intl.DateTimeFormat("et-EE", {
+      timeZone: zone,
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    }),
     dayMonth: new Intl.DateTimeFormat("et-EE", { timeZone: zone, day: "numeric", month: "short" }),
     dayLongMonth: new Intl.DateTimeFormat("et-EE", { timeZone: zone, day: "numeric", month: "long" }),
     dayOnly: new Intl.DateTimeFormat("et-EE", { timeZone: zone, day: "numeric" }),
     monthShort: new Intl.DateTimeFormat("et-EE", { timeZone: zone, month: "short" }),
     weekdayShort: new Intl.DateTimeFormat("et-EE", { timeZone: zone, weekday: "short" }),
     time: new Intl.DateTimeFormat("et-EE", { timeZone: zone, hour: "2-digit", minute: "2-digit" }),
-    dateTime: new Intl.DateTimeFormat("et-EE", { timeZone: zone, day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }),
+    dateTime: new Intl.DateTimeFormat("et-EE", {
+      timeZone: zone,
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }),
     utcDayMonth: new Intl.DateTimeFormat("et-EE", { timeZone: "UTC", day: "numeric", month: "short" }),
     utcDayLongMonth: new Intl.DateTimeFormat("et-EE", { timeZone: "UTC", day: "numeric", month: "long" }),
     utcDayOnly: new Intl.DateTimeFormat("et-EE", { timeZone: "UTC", day: "numeric" }),

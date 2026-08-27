@@ -34,10 +34,21 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: repeating-linear-gradient(90deg, transparent 0, transparent calc(23.33% - 0.05rem), rgba(16,35,63,.18) calc(23.33% - 0.05rem), rgba(16,35,63,.18) 23.33%);
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0,
+    transparent calc(23.33% - 0.05rem),
+    rgba(16, 35, 63, 0.18) calc(23.33% - 0.05rem),
+    rgba(16, 35, 63, 0.18) 23.33%
+  );
   border-radius: inherit;
 }
-.waste-progress { position: absolute; inset: 0 auto 0 0; border-radius: inherit; background: rgba(47,111,159,.38); }
+.waste-progress {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  background: rgba(47, 111, 159, 0.38);
+}
 .waste-marker {
   position: absolute;
   top: 50%;
@@ -46,7 +57,7 @@
   height: 0.8rem;
   border-radius: 50%;
   background: var(--brand);
-  box-shadow: 0 0 0 0.18rem rgba(16,35,63,.16);
+  box-shadow: 0 0 0 0.18rem rgba(16, 35, 63, 0.16);
 }
 .waste-date {
   display: flex;
@@ -93,7 +104,14 @@
   line-height: 1;
   font-weight: 600;
 }
-.axis-labels span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
-.axis-labels span:first-child { transform: none; }
-.axis-labels span:last-child { transform: translateX(-100%); }
-
+.axis-labels span {
+  position: absolute;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+.axis-labels span:first-child {
+  transform: none;
+}
+.axis-labels span:last-child {
+  transform: translateX(-100%);
+}

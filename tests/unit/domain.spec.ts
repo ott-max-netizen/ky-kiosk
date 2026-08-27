@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 import { busDayType, busSchoolSeasonActive } from "../../src/domain/bus/day-type";
 import { busRelativeLabel, getBusState, parseBusTime } from "../../src/domain/bus/departures";
 import { priceToCentsPerKwh } from "../../src/domain/electricity/price";
-import { calculatePurchasePriceCentsPerKwh, electricityTariffType } from "../../src/domain/electricity/tariff";
+import {
+  calculatePurchasePriceCentsPerKwh,
+  electricityTariffType,
+} from "../../src/domain/electricity/tariff";
 import { lastHouseMonths, type HouseMonth } from "../../src/domain/house/consumption";
 import { activeNotices } from "../../src/domain/notices/active";
 import { isEstonianPublicHoliday } from "../../src/domain/time/holidays";
@@ -95,7 +98,9 @@ describe("typed domain contracts", () => {
     [12.3, "s/kWh", 12.3],
     [3, undefined, null],
     [-3, undefined, null],
-  ])("explicit electricity unit %#", (value, unit, expected) => expect(priceToCentsPerKwh(value, unit)).toBe(expected));
+  ])("explicit electricity unit %#", (value, unit, expected) =>
+    expect(priceToCentsPerKwh(value, unit)).toBe(expected),
+  );
 
   it("applies the day tariff only on non-holiday workdays 07:00–22:00", () => {
     expect(electricityTariffType(new Date("2026-08-25T10:00:00+03:00"))).toBe("day");
@@ -142,8 +147,19 @@ describe("typed domain contracts", () => {
     const notices = [
       { id: "2", title: "B", body: "", type: "info", priority: 2, start: null, end: null },
       { id: "1", title: "A", body: "", type: "info", priority: 1, start: null, end: null },
-      { id: "3", title: "C", body: "", type: "info", priority: 0, start: null, end: "2020-01-01T00:00:00.000Z" },
+      {
+        id: "3",
+        title: "C",
+        body: "",
+        type: "info",
+        priority: 0,
+        start: null,
+        end: "2020-01-01T00:00:00.000Z",
+      },
     ];
-    expect(activeNotices(notices, new Date("2026-08-25T00:00:00.000Z")).map((item) => item.id)).toEqual(["1", "2"]);
+    expect(activeNotices(notices, new Date("2026-08-25T00:00:00.000Z")).map((item) => item.id)).toEqual([
+      "1",
+      "2",
+    ]);
   });
 });

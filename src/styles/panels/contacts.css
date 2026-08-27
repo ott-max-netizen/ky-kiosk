@@ -22,7 +22,7 @@
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 0.32rem;
   align-items: center;
-  padding: 0.10rem 0.32rem;
+  padding: 0.1rem 0.32rem;
   border: 0.06rem solid var(--line);
   border-left: 0.18rem solid var(--accent);
   border-radius: 0.48rem;
@@ -65,8 +65,9 @@
   font-weight: 800;
   letter-spacing: 0.005em;
 }
-.contact-card-important .contact-phone { color: var(--danger); }
-
+.contact-card-important .contact-phone {
+  color: var(--danger);
+}
 
 .contact-card-emergency-primary {
   border-left-width: 0.28rem;

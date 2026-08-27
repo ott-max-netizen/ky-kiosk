@@ -16,7 +16,9 @@ const load = (path) => import(pathToFileURL(join(modulesRoot, "src", path)).href
 const { busDayType, busSchoolSeasonActive } = await load("domain/bus/day-type.js");
 const { busRelativeLabel, getBusState } = await load("domain/bus/departures.js");
 const { priceToCentsPerKwh } = await load("domain/electricity/price.js");
-const { calculatePurchasePriceCentsPerKwh, electricityTariffType } = await load("domain/electricity/tariff.js");
+const { calculatePurchasePriceCentsPerKwh, electricityTariffType } = await load(
+  "domain/electricity/tariff.js",
+);
 const { hasHouseData, lastHouseMonths } = await load("domain/house/consumption.js");
 const { activeNotices } = await load("domain/notices/active.js");
 const { isEstonianPublicHoliday } = await load("domain/time/holidays.js");
@@ -46,13 +48,26 @@ function close(actual, expected, epsilon, message) {
 // Aeg ja pühad.
 equal(parseDateOnly("2024-02-29"), { year: 2024, month: 2, day: 29 }, "liigaasta kuupäev");
 equal(parseDateOnly("2026-02-30"), null, "vigane kuupäev");
-equal(addCalendarDays({ year: 2026, month: 12, day: 31 }, 1), { year: 2027, month: 1, day: 1 }, "aastavahetus");
+equal(
+  addCalendarDays({ year: 2026, month: 12, day: 31 }, 1),
+  { year: 2027, month: 1, day: 1 },
+  "aastavahetus",
+);
 for (const parts of [
-  { year: 2026, month: 1, day: 1 }, { year: 2026, month: 2, day: 24 }, { year: 2026, month: 4, day: 3 },
-  { year: 2026, month: 4, day: 5 }, { year: 2026, month: 5, day: 1 }, { year: 2026, month: 5, day: 24 },
-  { year: 2026, month: 6, day: 23 }, { year: 2026, month: 6, day: 24 }, { year: 2026, month: 8, day: 20 },
-  { year: 2026, month: 12, day: 24 }, { year: 2026, month: 12, day: 25 }, { year: 2026, month: 12, day: 26 },
-]) check(isEstonianPublicHoliday(parts), `riigipüha ${JSON.stringify(parts)}`);
+  { year: 2026, month: 1, day: 1 },
+  { year: 2026, month: 2, day: 24 },
+  { year: 2026, month: 4, day: 3 },
+  { year: 2026, month: 4, day: 5 },
+  { year: 2026, month: 5, day: 1 },
+  { year: 2026, month: 5, day: 24 },
+  { year: 2026, month: 6, day: 23 },
+  { year: 2026, month: 6, day: 24 },
+  { year: 2026, month: 8, day: 20 },
+  { year: 2026, month: 12, day: 24 },
+  { year: 2026, month: 12, day: 25 },
+  { year: 2026, month: 12, day: 26 },
+])
+  check(isEstonianPublicHoliday(parts), `riigipüha ${JSON.stringify(parts)}`);
 check(!isEstonianPublicHoliday({ year: 2026, month: 4, day: 6 }), "2. ülestõusmispüha ei ole riigipüha");
 
 // Bussid.
@@ -72,12 +87,23 @@ equal(buses.suurKaare.length, 2, "kaks väljumist Suur-Kaare suunas");
 equal(parseWasteFrequency("Iga: T, R").frequency?.kind, "weekly", "nädalane sagedus");
 equal(parseWasteFrequency("Kord 2 nädala tagant N").frequency?.kind, "interval", "kahenädalane sagedus");
 check(parseWasteFrequency("Kord kuus").warnings.length === 1, "tundmatu sagedus annab hoiatuse");
-const waste = nextWasteByType([
-  { type: "Segaolmejäätmed", date: "2026-08-25", frequency: "Iga: T, R" },
-  { type: "Klaas", date: "2026-08-27", frequency: "Kord 2 nädala tagant N" },
-], 30, { year: 2026, month: 8, day: 25 });
+const waste = nextWasteByType(
+  [
+    { type: "Segaolmejäätmed", date: "2026-08-25", frequency: "Iga: T, R" },
+    { type: "Klaas", date: "2026-08-27", frequency: "Kord 2 nädala tagant N" },
+  ],
+  30,
+  { year: 2026, month: 8, day: 25 },
+);
 equal(waste.occurrences.length, 2, "iga jäätmeliigi järgmine vedu");
-check(nextWasteByType([{ type: "Klaas", date: "2026-08-26", frequency: "Kord 2 nädala tagant N" }], 30, { year: 2026, month: 8, day: 25 }).warnings.length > 0, "vale ankrupäev annab hoiatuse");
+check(
+  nextWasteByType([{ type: "Klaas", date: "2026-08-26", frequency: "Kord 2 nädala tagant N" }], 30, {
+    year: 2026,
+    month: 8,
+    day: 25,
+  }).warnings.length > 0,
+  "vale ankrupäev annab hoiatuse",
+);
 
 // Elekter.
 equal(priceToCentsPerKwh(100, "€/MWh"), 10, "€/MWh teisendus");
@@ -86,42 +112,102 @@ equal(priceToCentsPerKwh(3, undefined), null, "ühikuta elektrihind lükatakse t
 equal(electricityTariffType(new Date("2026-08-25T07:00:00+03:00")), "day", "päevatariifi algus");
 equal(electricityTariffType(new Date("2026-08-25T22:00:00+03:00")), "night", "öötariifi algus");
 equal(electricityTariffType(new Date("2026-08-20T12:00:00+03:00")), "night", "riigipüha öötariif");
-close(calculatePurchasePriceCentsPerKwh(50, {
-  exciseCentsPerKwh: 0.21,
-  purchaseMarginCentsPerKwh: 0.78,
-  securityFeeCentsPerKwh: 0.758,
-  renewableFeeCentsPerKwh: 0.84,
-  distributionDayCentsPerKwh: 3.49,
-  distributionNightCentsPerKwh: 1.99,
-}, new Date("2026-08-25T10:00:00+03:00")), (5 + 0.21 + 0.78 + 0.758 + 0.84 + 3.49) * 1.24, 1e-9, "elektri ostuhinna valem");
+close(
+  calculatePurchasePriceCentsPerKwh(
+    50,
+    {
+      exciseCentsPerKwh: 0.21,
+      purchaseMarginCentsPerKwh: 0.78,
+      securityFeeCentsPerKwh: 0.758,
+      renewableFeeCentsPerKwh: 0.84,
+      distributionDayCentsPerKwh: 3.49,
+      distributionNightCentsPerKwh: 1.99,
+    },
+    new Date("2026-08-25T10:00:00+03:00"),
+  ),
+  (5 + 0.21 + 0.78 + 0.758 + 0.84 + 3.49) * 1.24,
+  1e-9,
+  "elektri ostuhinna valem",
+);
 
 // Ilm ja maja.
 equal(weatherPhenomenonEt("Cloudy"), "Pilves", "ilmanähtuse tõlge");
 equal(weatherPhenomenonEt("Alien weather event"), "", "tundmatu inglise tekst ei leki");
-const emptyMonth = { year: 2026, month: 8, monthName: "August", key: "2026-08", waterM3: null, heatMWh: null, electricityKWh: null, solarKWh: null };
+const emptyMonth = {
+  year: 2026,
+  month: 8,
+  monthName: "August",
+  key: "2026-08",
+  waterM3: null,
+  heatMWh: null,
+  electricityKWh: null,
+  solarKWh: null,
+};
 check(!hasHouseData(emptyMonth), "tühi tulevikukuu jäetakse vahele");
-const months = Array.from({ length: 8 }, (_, index) => ({ ...emptyMonth, month: index + 1, key: `2026-${String(index + 1).padStart(2, "0")}`, waterM3: index < 7 ? 200 + index : null }));
-equal(lastHouseMonths(months).map((item) => item.month), [4, 5, 6, 7], "neli viimast andmetega kuud");
+const months = Array.from({ length: 8 }, (_, index) => ({
+  ...emptyMonth,
+  month: index + 1,
+  key: `2026-${String(index + 1).padStart(2, "0")}`,
+  waterM3: index < 7 ? 200 + index : null,
+}));
+equal(
+  lastHouseMonths(months).map((item) => item.month),
+  [4, 5, 6, 7],
+  "neli viimast andmetega kuud",
+);
 
 // Teated ja andmekiht.
-const notices = activeNotices([
-  { id: "2", title: "B", body: "", type: "info", priority: 2, start: null, end: null },
-  { id: "1", title: "A", body: "", type: "info", priority: 1, start: null, end: null },
-  { id: "3", title: "C", body: "", type: "info", priority: 0, start: null, end: "2020-01-01T00:00:00.000Z" },
-], new Date("2026-08-25T00:00:00Z"));
-equal(notices.map((item) => item.id), ["1", "2"], "teadete kliendipoolne kehtivus ja prioriteet");
+const notices = activeNotices(
+  [
+    { id: "2", title: "B", body: "", type: "info", priority: 2, start: null, end: null },
+    { id: "1", title: "A", body: "", type: "info", priority: 1, start: null, end: null },
+    {
+      id: "3",
+      title: "C",
+      body: "",
+      type: "info",
+      priority: 0,
+      start: null,
+      end: "2020-01-01T00:00:00.000Z",
+    },
+  ],
+  new Date("2026-08-25T00:00:00Z"),
+);
+equal(
+  notices.map((item) => item.id),
+  ["1", "2"],
+  "teadete kliendipoolne kehtivus ja prioriteet",
+);
 const previous = createFallbackData();
 previous.contacts = [{ role: "Juhatus", name: "Mari", phone: "5000000" }];
-const merged = mergeIncoming(previous, {
-  ok: true,
-  updatedAt: "2026-08-25T10:00:00.000Z",
-  sections: { contacts: { ok: false, missing: true, error: "Leht puudub" } },
-}, createSectionVersions());
+const merged = mergeIncoming(
+  previous,
+  {
+    ok: true,
+    updatedAt: "2026-08-25T10:00:00.000Z",
+    sections: { contacts: { ok: false, missing: true, error: "Leht puudub" } },
+  },
+  createSectionVersions(),
+);
 equal(merged.data.contacts, previous.contacts, "puuduv leht säilitab last-known-good");
-const validation = validateDashboardPayload({ ok: true, sections: { electricity: { ok: true } }, electricity: { date: "2026-08-25", points: [{ time: "2026-08-25T00:00:00Z", price: 3 }] } });
-check(!validation.value?.electricity && validation.problems.some((problem) => problem.includes("ühik")), "elektri ühik on kohustuslik");
-const contactsValidation = validateDashboardPayload({ ok: true, sections: { contacts: { ok: true } }, contacts: [{ role: "Juhatus", name: "Mari", phone: "5000000", email: "private@example.test" }] });
-check(!(contactsValidation.value?.contacts?.[0] && "email" in contactsValidation.value.contacts[0]), "kontakti e-posti ei saadeta kliendile");
+const validation = validateDashboardPayload({
+  ok: true,
+  sections: { electricity: { ok: true } },
+  electricity: { date: "2026-08-25", points: [{ time: "2026-08-25T00:00:00Z", price: 3 }] },
+});
+check(
+  !validation.value?.electricity && validation.problems.some((problem) => problem.includes("ühik")),
+  "elektri ühik on kohustuslik",
+);
+const contactsValidation = validateDashboardPayload({
+  ok: true,
+  sections: { contacts: { ok: true } },
+  contacts: [{ role: "Juhatus", name: "Mari", phone: "5000000", email: "private@example.test" }],
+});
+check(
+  !(contactsValidation.value?.contacts?.[0] && "email" in contactsValidation.value.contacts[0]),
+  "kontakti e-posti ei saadeta kliendile",
+);
 
 // Staatilised turva- ja ehituslepingud.
 const packageJson = JSON.parse(readFileSync("package.json", "utf8"));
@@ -135,7 +221,10 @@ function walk(directory) {
   }
 }
 walk("src");
-const sources = sourceFiles.filter((path) => /\.(ts|css)$/.test(path)).map((path) => readFileSync(path, "utf8")).join("\n");
+const sources = sourceFiles
+  .filter((path) => /\.(ts|css)$/.test(path))
+  .map((path) => readFileSync(path, "utf8"))
+  .join("\n");
 equal((sources.match(/\bsetInterval\s*\(/g) ?? []).length, 1, "ainult üks setInterval");
 check(!/innerHTML|insertAdjacentHTML/.test(sources), "renderdus ei kasuta innerHTML-i");
 check(!/serviceWorker\.register/.test(sources), "service workerit ei registreerita");
@@ -144,7 +233,8 @@ function walkDist(directory) {
   for (const name of readdirSync(directory)) {
     const path = join(directory, name);
     if (statSync(path).isDirectory()) walkDist(path);
-    else if (!path.endsWith("config.js") && !path.endsWith("config.example.js")) distContent.push(readFileSync(path, "utf8"));
+    else if (!path.endsWith("config.js") && !path.endsWith("config.example.js"))
+      distContent.push(readFileSync(path, "utf8"));
   }
 }
 walkDist("dist");
@@ -153,7 +243,6 @@ check(!/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]{20,}/.test(built), "Apps S
 check(!/[A-Fa-f0-9]{64}/.test(built), "feedToken ei ole buildis");
 const server = readFileSync("kiosk/local-server.ps1", "utf8");
 check(server.includes("KU-INFOEKRAAN-OK") && server.includes("/healthz"), "healthz leping säilib");
-
 
 // Tüpograafia: 1920 px juures on 1 rem = 20 px * scale. Tasemed peavad olema
 // ohutud minimaalsel lubatud runtime skaalal, mitte ainult vaikimisi väärtusel.
@@ -165,7 +254,10 @@ for (const level of ["a", "b", "c", "d"]) {
   const match = tokensCss.match(new RegExp(`--fs-${level}:\\s*([0-9.]+)rem`));
   check(Boolean(match), `tüpograafiataseme --fs-${level} muutuja on olemas`);
   tokenRem[level] = Number(match && match[1]);
-  check(tokenRem[level] * rootPxAtMinScale >= levelMinimumPx[level], `--fs-${level} täidab miinimumi ${levelMinimumPx[level]} px`);
+  check(
+    tokenRem[level] * rootPxAtMinScale >= levelMinimumPx[level],
+    `--fs-${level} täidab miinimumi ${levelMinimumPx[level]} px`,
+  );
 }
 
 function fontSizeForSelector(file, selector) {
@@ -239,14 +331,20 @@ for (const path of filesToScan) {
   const text = readFileSync(path, "utf8");
   for (const match of text.matchAll(/\bfeedToken\s*:\s*["']([^"'\r\n]*)["']/g)) {
     const value = match[1];
-    check(!value || /^REPLACE_/i.test(value) || /^(?:\.{3}|PASTA_|YOUR_|<)/i.test(value), `jälgitavas failis ${path} ei ole päris feedTokenit`);
+    check(
+      !value || /^REPLACE_/i.test(value) || /^(?:\.{3}|PASTA_|YOUR_|<)/i.test(value),
+      `jälgitavas failis ${path} ei ole päris feedTokenit`,
+    );
   }
 }
 
 const packageVersion = packageJson.version;
 const snapshotVersion = readFileSync("tests/e2e/snapshots/build-version.txt", "utf8").trim();
 if (process.env.KU_ALLOW_STALE_VISUAL_BASELINE === "1") {
-  if (snapshotVersion !== packageVersion) console.warn(`HOIATUS: visuaalbaseline on ${snapshotVersion}, projekt ${packageVersion}; uuenda käsuga npm run test:visual:update.`);
+  if (snapshotVersion !== packageVersion)
+    console.warn(
+      `HOIATUS: visuaalbaseline on ${snapshotVersion}, projekt ${packageVersion}; uuenda käsuga npm run test:visual:update.`,
+    );
 } else {
   equal(snapshotVersion, packageVersion, "visuaalbaseline'i versioon vastab package.json versioonile");
 }
@@ -254,9 +352,12 @@ if (process.env.KU_ALLOW_STALE_VISUAL_BASELINE === "1") {
 check(Boolean(BUS_TIMETABLE.validUntil), "bussigraafikul on hoolduslik kontrolltähtaeg");
 const busFrom = Date.parse(`${BUS_TIMETABLE.validFrom}T12:00:00Z`);
 const busUntil = Date.parse(`${BUS_TIMETABLE.validUntil}T12:00:00Z`);
-check(Number.isFinite(busFrom) && Number.isFinite(busUntil) && busUntil >= busFrom, "bussigraafiku kehtivusvahemik on korrektne");
-if (Date.now() - busFrom > 366 * 86_400_000) console.warn("HOIATUS: bussigraafiku validFrom on üle 12 kuu vana; kontrolli ametlikku sõiduplaani.");
-
+check(
+  Number.isFinite(busFrom) && Number.isFinite(busUntil) && busUntil >= busFrom,
+  "bussigraafiku kehtivusvahemik on korrektne",
+);
+if (Date.now() - busFrom > 366 * 86_400_000)
+  console.warn("HOIATUS: bussigraafiku validFrom on üle 12 kuu vana; kontrolli ametlikku sõiduplaani.");
 
 // Pika teate sobitus ei tohi minna B-tasemest väiksemaks ega kasvatada cache'i lõputult.
 const textFitSource = readFileSync("src/ui/text-fit.ts", "utf8");
@@ -267,19 +368,31 @@ check(!/Math\.max\(16\s*,/.test(textFitSource), "teate sobituses pole vana 16 px
 // Prügiveo päevavahetus peab kasutama sama ajavööndiloogikat nagu ülejäänud rakendus.
 const wastePanelSource = readFileSync("src/ui/panels/waste.ts", "utf8");
 check(wastePanelSource.includes("zonedParts("), "prügiveo paneel kasutab zonedParts ajavööndiloogikat");
-check(!/\.getFullYear\(|\.getMonth\(|\.getDate\(/.test(wastePanelSource), "prügiveo paneel ei kasuta masina lokaalset kuupäeva");
+check(
+  !/\.getFullYear\(|\.getMonth\(|\.getDate\(/.test(wastePanelSource),
+  "prügiveo paneel ei kasuta masina lokaalset kuupäeva",
+);
 
 // Kioskireload peab säilima brauserikrahhi järel ja demo peab elusignaali saatma.
 const lifecycleSource = readFileSync("src/app/lifecycle.ts", "utf8");
 check(lifecycleSource.includes("window.localStorage"), "reload'i ajalugu säilib localStorage'is");
-check(lifecycleSource.includes("currentMinutes < targetMinutes"), "öine reload toimub ka pärast vahele jäänud täpset minutit");
+check(
+  lifecycleSource.includes("currentMinutes < targetMinutes"),
+  "öine reload toimub ka pärast vahele jäänud täpset minutit",
+);
 const bootstrapSource = readFileSync("src/app/bootstrap.ts", "utf8");
-check(/fetch\("\.\/heartbeat"/.test(bootstrapSource) && !/if\s*\(\s*!params\.demo\s*\)[^\n]*heartbeat/.test(bootstrapSource), "demo saadab samuti lokaalset heartbeat'i");
+check(
+  /fetch\("\.\/heartbeat"/.test(bootstrapSource) &&
+    !/if\s*\(\s*!params\.demo\s*\)[^\n]*heartbeat/.test(bootstrapSource),
+  "demo saadab samuti lokaalset heartbeat'i",
+);
 const watchdogSource = readFileSync("kiosk/watchdog.ps1", "utf8");
 check(watchdogSource.includes('[regex]::Escape("127.0.0.1:$Port")'), "watchdog kasutab seadistatud porti");
 
 const sourcesGs = readFileSync("apps-script/Sources.gs", "utf8");
-check(sourcesGs.includes("storeApiFailure_") && sourcesGs.includes("negativeCacheSeconds"), "turuallikatel on negatiivne vahemälu");
-
+check(
+  sourcesGs.includes("storeApiFailure_") && sourcesGs.includes("negativeCacheSeconds"),
+  "turuallikatel on negatiivne vahemälu",
+);
 
 console.log(`Preflight: ${assertions} kontrolli läbitud.`);

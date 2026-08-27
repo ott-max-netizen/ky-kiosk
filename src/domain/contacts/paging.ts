@@ -12,5 +12,11 @@ export function pageItems<T>(items: T[], page: number, pageSize: number): PageRe
   const normalized = ((Math.floor(page) % pages) + pages) % pages;
   const start = normalized * safeSize;
   const visible = items.slice(start, start + safeSize);
-  return { items: visible, page: normalized, pages, pageSize: safeSize, remaining: Math.max(0, items.length - start - visible.length) };
+  return {
+    items: visible,
+    page: normalized,
+    pages,
+    pageSize: safeSize,
+    remaining: Math.max(0, items.length - start - visible.length),
+  };
 }

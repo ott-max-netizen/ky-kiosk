@@ -25,7 +25,9 @@
   font-weight: 800;
   white-space: nowrap;
 }
-.market-stale-summary[hidden] { display: none; }
+.market-stale-summary[hidden] {
+  display: none;
+}
 .market-grid {
   flex: 1;
   min-height: 0;
@@ -145,8 +147,12 @@
   height: 100%;
   overflow: visible;
 }
-.electricity-chart { min-height: 3.65rem; }
-.euribor-chart { min-height: 2.75rem; }
+.electricity-chart {
+  min-height: 3.65rem;
+}
+.euribor-chart {
+  min-height: 2.75rem;
+}
 .market-grid-line {
   stroke: var(--market-grid);
   stroke-width: 1;
@@ -271,7 +277,9 @@
   line-height: 1;
   font-weight: 800;
 }
-.market-stale[hidden] { display: none; }
+.market-stale[hidden] {
+  display: none;
+}
 .market-empty {
   display: flex;
   align-items: center;
@@ -284,4 +292,3 @@
   font-weight: 600;
   text-align: center;
 }
-
