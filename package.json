@@ -1,6 +1,6 @@
 {
   "name": "ku-infoekraan",
-  "version": "4.3.0",
+  "version": "4.4.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -35,6 +35,7 @@
     "preflight": "node tools/preflight.mjs",
     "check:fallback": "npm run build:fallback && npm run preflight",
     "test:visual:update": "playwright test --update-snapshots && node tools/update-visual-baseline-version.mjs",
-    "test:sources": "node tools/check-market-sources.mjs"
+    "test:sources": "node tools/check-market-sources.mjs",
+    "measure:check": "npm run build && node tools/measure.mjs --hours 24 --assert-budgets"
   }
 }

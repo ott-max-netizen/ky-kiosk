@@ -4,7 +4,7 @@ import { busRelativeLabel, getBusState } from "../../domain/bus/departures";
 import { busDayTypeLabel } from "../../domain/bus/day-type";
 import { getFormatters } from "../../domain/time/formatters";
 import { zonedParts } from "../../domain/time/zoned";
-import { createElement, requireElement, setClass, setText } from "../dom";
+import { createElement, requireChildElement, requireElement, setClass, setText } from "../dom";
 import { reconcileChildren } from "../reconcile";
 import type { Panel } from "./panel";
 
@@ -105,12 +105,10 @@ export class BusesPanel implements Panel<BusesSlice> {
     // Väljumisi uuendatakse iga minutivahetuse järel; kaardid on taaskasutatavad.
     reconcileChildren(area, items, createDepartureCard, (card, item) => {
       card.title = item.note;
-      const [day, time, line, relative] = card.children as unknown as [
-        HTMLElement,
-        HTMLElement,
-        HTMLElement,
-        HTMLElement,
-      ];
+      const day = requireChildElement(card, 0);
+      const time = requireChildElement(card, 1);
+      const line = requireChildElement(card, 2);
+      const relative = requireChildElement(card, 3);
       setText(day, dayLabel(item, timeZone));
       setClass(day, "is-today", item.dayOffset === 0);
       setClass(day, "is-tomorrow", item.dayOffset === 1);

@@ -1,5 +1,23 @@
 # Muudatused
 
+## 4.4.0 – 2026-08-27
+
+### Arhitektuuri ja release-värava tugevdamine
+
+- `Panel<T>` kirjeldab nüüd ka valikulist `tick(now: Date)` elutsüklit. Kõik roteeruvad paneelid kasutavad sama `Date` sisendit; `AppView` ei pea enam teadma, milline paneel ootas millisekundeid ja milline `Date` objekti.
+- `DebugOverlay` koliti `src/diagnostics/` alt `src/ui/` alla. Diagnostikakiht ei impordi enam UI DOM-abifunktsioone.
+- Prügiveo-, bussi- ja ilmapaneeli viis child-tuple cast'i asendati kontrollitud `requireChildElement()` abifunktsiooniga. Audit nimetas neist ainult kolme prügiveo paneelis; repository kontroll leidis lisaks ühe bussides ja ühe ilmas. DOM-skeleti regressioon annab nüüd kohe arusaadava vea, mitte vaikse vale tüübi.
+- `index.html` sisaldab CSP meta-varuvarianti, et põhiline poliitika kehtiks ka juhul, kui lehte serveeritakse ajutiselt ilma PowerShelli serverita. PowerShelli HTTP-päis jääb põhikaitseks ja sisaldab lisaks `frame-ancestors 'none'`.
+- `tools/measure.mjs --assert-budgets` muudab 24 h Chromiumi mõõtmise masinloetavaks release-väravaks: vaikimisi kuni 1000 HTML- ja 200 SVG-elementi. Lisatud `npm run measure:check`.
+- `docs/runbook.md` release-kontroll kasutab nüüd jõudluseelarvet, mitte ainult käsitsi numbrite vaatamist.
+- `package-lock.json` juurversioon viidi projekti versiooniga kooskõlla.
+- HousePaneli DOM-test kasutab nüüd realistlikku epohhiaega; varasem 1970. aasta timestamp ei tõendanud päriselt vaadete roteerumist.
+
+### Teadlikult lahendamata
+
+- Playwrighti commit'itud PNG-baseline'id on endiselt 4.0.0 päritolu. Neid ei nimetatud ümber ega genereeritud selles keskkonnas uueks; release vajab kioskiga võrreldaval masinal `npm run test:visual:update` käivitamist ja visuaalset ülevaatust.
+- Apps Scripti live-spreadsheet, Windowsi Task Scheduler/watchdog ja väliste turuallikate live-kuju vajavad jätkuvalt vastavat Google/Windows/internetiga keskkonda.
+
 ## 4.3.0 – 2026-08-27
 
 ### Parandatud (P0/P1)

@@ -244,6 +244,36 @@ check(!/[A-Fa-f0-9]{64}/.test(built), "feedToken ei ole buildis");
 const server = readFileSync("kiosk/local-server.ps1", "utf8");
 check(server.includes("KU-INFOEKRAAN-OK") && server.includes("/healthz"), "healthz leping säilib");
 
+// UI arhitektuuri ja release-värava invariandid.
+const panelContract = readFileSync("src/ui/panels/panel.ts", "utf8");
+check(/tick\?\(now:\s*Date\):\s*void/.test(panelContract), "Panel<T> kirjeldab ajapõhist tick-elutsüklit");
+check(!existsSync("src/diagnostics/debug-overlay.ts"), "DebugOverlay ei tekita diagnostics -> ui sõltuvust");
+check(existsSync("src/ui/debug-overlay.ts"), "DebugOverlay asub UI kihis");
+check(!/as unknown as\s*\[\s*HTMLElement/.test(sources), "UI paneelides pole child-tuple topeltcast'e");
+const indexHtml = readFileSync("index.html", "utf8");
+check(
+  indexHtml.includes('http-equiv="Content-Security-Policy"'),
+  "index.html sisaldab CSP meta-varuvarianti",
+);
+check(
+  indexHtml.includes("script-src 'self' https://script.google.com https://script.googleusercontent.com"),
+  "CSP meta lubab ainult rakenduse ja JSONP jaoks vajalikud skriptiallikad",
+);
+const measureSource = readFileSync("tools/measure.mjs", "utf8");
+check(
+  measureSource.includes("assert-budgets") &&
+    measureSource.includes("maxHtmlCreated") &&
+    measureSource.includes("maxSvgCreated"),
+  "Chromiumi mõõtetööriist oskab jõudluseelarve rikkumisel ebaõnnestuda",
+);
+const lockJson = JSON.parse(readFileSync("package-lock.json", "utf8"));
+equal(lockJson.version, packageJson.version, "package-lock versioon vastab package.json versioonile");
+equal(
+  lockJson.packages?.[""]?.version,
+  packageJson.version,
+  "package-lock juurpaketi versioon vastab projektile",
+);
+
 // Tüpograafia: 1920 px juures on 1 rem = 20 px * scale. Tasemed peavad olema
 // ohutud minimaalsel lubatud runtime skaalal, mitte ainult vaikimisi väärtusel.
 const tokensCss = readFileSync("src/styles/tokens.css", "utf8");

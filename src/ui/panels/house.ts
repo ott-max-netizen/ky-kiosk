@@ -147,7 +147,8 @@ export class HousePanel implements Panel<HouseSlice> {
     if (changed || !this.area.firstChild) this.showActiveView();
   }
 
-  tick(nowMs = Date.now()): void {
+  tick(now: Date): void {
+    const nowMs = now.getTime();
     if (!this.mounted) return;
     if (this.paused) {
       if (nowMs - this.pausedAtMs < MAX_PAUSE_MS) return;

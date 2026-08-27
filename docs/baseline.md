@@ -137,3 +137,71 @@ märgitud allpool.
 - **Windowsi kiosk, PowerShell, Task Scheduler, Apps Scripti runtime:** Linuxi
   konteineris ei saa käivitada; muutmata jäetud, käsitestid on runbookis.
 - **7 päeva päris brauserimälu profileerimine:** ei ole automatiseeritud.
+
+## 4.4.0 arenduse kontroll
+
+4.4.0 ei muuda paneelide visuaalset paigutust ega andmelepinguid. Muudatused on
+elutsükli tüübilepingus, CSP meta-varuvariandis, DOM-abifunktsioonis ja release'i
+jõudluseelarves.
+
+Tõendatud selles teostuskeskkonnas:
+
+- `src/**/*.ts` range kontroll globaalse TypeScript 5.8.3-ga, DOM/ES2023 teekidega: PASS;
+- importgraafik: 54 TypeScripti faili, 178 suhtelist importi, 0 tsüklit;
+- `src/domain/**` ei impordi `src/ui/**` ega `src/data/**`: PASS;
+- `src/diagnostics/**` ei impordi enam `src/ui/**`: PASS;
+- `as unknown as [HTMLElement, ...]` child-tuple cast'e lähtekoodis: 0;
+- Chromiumi visuaalkatset ei saanud 4.4.0 arenduskeskkonnas käivitada, sest
+  masinapoliitika tagastas nii `http://127.0.0.1` kui `file://` URL-idele
+  `ERR_BLOCKED_BY_ADMINISTRATOR`.
+
+### 4.4.0 järelkontroll töötava Chromiumiga
+
+Muudatused võeti hiljem vastu keskkonnas, kus Chromium oli kasutatav, ja
+brauseripoolne osa sai tõendatud:
+
+- **Renderdus ei muutunud.** Kuus 1920 × 1080 fixture'it renderdati 4.3.0
+  koodiga samas keskkonnas, salvestati baseline'iks ja 4.4.0 võrreldi nende
+  vastu — kõik 7 Playwright testi läbisid pikslitäpselt. CSP meta, `tick(now:
+  Date)` ühtlustus ega `requireChildElement` ei muutnud ühtki pikslit.
+- **CSP meta ei riku rakendust.** Konsooli jälgides oli nii `vite preview`
+  (production build) kui `vite dev` puhul **0 CSP rikkumist**; teated
+  renderdusid mõlemal juhul. Ainsad konsoolivead olid eelvaates ootuspärased
+  404-d puuduvale `config.js`-ile ja `/heartbeat`-ile, mida serveerib alles
+  kioski PowerShelli server.
+- **Jõudluseelarve värav töötab.** `npm run measure:check` läbis 24 h
+  kiirendatud sessiooniga (väljundi viimane rida
+  `Jõudluseelarve läbitud: HTML ≤ 1000, SVG ≤ 200`, väljumiskood 0).
+
+| Mõõdik | 4.3.0 | 4.4.0 | Eelarve |
+|---|---:|---:|---:|
+| Loodud HTML-elemente 24 h | 266 | 266 | ≤ 1000 |
+| Loodud SVG-elemente 24 h | 64 | 64 | ≤ 200 |
+| DOM-sõlmi (algus → 24 h) | 398 → 398 | 399 → 399 | stabiilne |
+| Sunnitud reflow'sid 24 h | 24 | 24 | — |
+| `addEventListener` kokku | 23 | 23 | — |
+| `index.html` | 9 035 B | 9 395 B | — |
+
+DOM-sõlmede 398 → 399 vahe on CSP meta-silt `<head>`-is; `querySelectorAll("*")`
+loeb ka `<head>` elemendid. `index.html` kasvas sama sildi võrra 360 baiti.
+Renderdusega seotud numbrid on muutumatud, mis oligi 4.4.0 eesmärk: muudatused
+puudutavad tüübilepingut, kihijaotust ja release-väravat, mitte renderdust.
+
+Commit'itud PNG-baseline'ide seis ei muutu: need on endiselt 4.0.0 päritolu ja
+neid ei tohi selle keskkonna fontidega üle kirjutada.
+
+Jõudluse release-värav on nüüd masinloetav:
+
+```bash
+npm run measure:check
+```
+
+Vaikimisi piirid: kuni **1000 HTML-elementi** ja **200 SVG-elementi** 24 h
+kiirendatud sessioonis. 4.3.0 mõõdetud baas 266 / 64 jääb mõlemast piirist suure
+varuga allapoole. Piirid on tahtlikult lõdvemad kui baas: eesmärk on avastada
+paneeli tagasiminek pidevasse DOM-i taasehitusse, mitte püüda mõõtemüra.
+
+Commit'itud PNG-baseline'id jäävad teadlikult versioonile 4.0.0. Neid ei nimetata
+4.4.0 baseline'iks enne, kui `npm run test:visual:update` on käivitatud
+kioskiga võrreldava fontide, Edge/Chromiumi ja 1920×1080 renderdusega masinal ning
+kuus pilti on visuaalselt üle vaadatud.

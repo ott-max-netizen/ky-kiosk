@@ -2,7 +2,7 @@ import type { WasteItem, WasteOccurrence } from "../../domain/waste/occurrences"
 import { nextWasteByType } from "../../domain/waste/occurrences";
 import { zonedParts } from "../../domain/time/zoned";
 import { pageItems } from "../../domain/contacts/paging";
-import { createElement, requireElement, setClass, setText } from "../dom";
+import { createElement, requireChildElement, requireElement, setClass, setText } from "../dom";
 import { reconcileChildren } from "../reconcile";
 import { formatDateValue, updatePageLabel } from "./helpers";
 import type { Panel } from "./panel";
@@ -127,13 +127,17 @@ export class WastePanel implements Panel<WasteSlice> {
 
   private patchRow(row: HTMLElement, { item, days }: WasteOccurrence): void {
     const pct = Math.min(100, Math.max(0, (days / this.slice.windowDays) * 100));
-    const [name, track, date] = row.children as unknown as [HTMLElement, HTMLElement, HTMLElement];
+    const name = requireChildElement(row, 0);
+    const track = requireChildElement(row, 1);
+    const date = requireChildElement(row, 2);
     setText(name, item.type || "Jäätmed");
-    const [progress, marker] = track.children as unknown as [HTMLElement, HTMLElement];
+    const progress = requireChildElement(track, 0);
+    const marker = requireChildElement(track, 1);
     const width = `${pct}%`;
     if (progress.style.width !== width) progress.style.width = width;
     if (marker.style.left !== width) marker.style.left = width;
-    const [strong, small] = date.children as unknown as [HTMLElement, HTMLElement];
+    const strong = requireChildElement(date, 0);
+    const small = requireChildElement(date, 1);
     setText(strong, days === 0 ? "Täna" : days === 1 ? "Homme" : `${days} p`);
     setClass(strong, "is-word", days <= 1);
     setText(small, formatDateValue(item.date, "dayMonth", this.slice.timeZone));

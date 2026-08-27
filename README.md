@@ -1,13 +1,13 @@
-# KÜ infoekraan 4.3.0
+# KÜ infoekraan 4.4.0
 
 Windowsi ja Microsoft Edge'i kioskirežiimis töötav korteriühistu infoekraan 27-tollisele 1920 × 1080 ekraanile. Kasutajaliides on eesti keeles, ajavöönd on `Europe/Tallinn` ja kogu staatiline rakendus töötab kohalikust veebiserverist ka internetiühenduseta.
 
-Versioon 4.2.0 säilitab 4.1.0 Vite + TypeScripti arhitektuuri ja paigutuse, kuid kehtestab kontrollitavad loetavustasemed, parandab pika teate sobituse, kioski hooldusloogika ning väliste turuallikate tõrkekäitumise. Google Sheetsi skeem, IndexedDB vahemälu, JSONP varuvariant ja Windowsi kioskiskriptid jäävad alles.
+Versioon 4.4.0 jätkab 4.3.0 mõõdetud paneeliarhitektuuri: renderdus patchib olemasolevat DOM-i, `Panel<T>` leping sisaldab ka valikulist ajapõhist `tick(now: Date)` elutsüklit ning release-värav sisaldab masinloetavat 24 h jõudluseelarvet. Google Sheetsi skeem, IndexedDB vahemälu, JSONP varuvariant ja Windowsi kioskiskriptid jäävad alles.
 
 ## Põhiomadused
 
 - raamistikuta TypeScripti ES-moodulid ja **0 runtime-sõltuvust**;
-- paneelid kasutavad `mount()` / `update()` / `destroy()` elutsüklit;
+- paneelid kasutavad `mount()` / `update()` / valikulist `tick()` / `destroy()` elutsüklit;
 - üks keskne ajastaja: ainus `setInterval` asub failis `src/app/scheduler.ts`;
 - sektsioonipõhine last-known-good IndexedDB vahemälu;
 - fetch esmane, rangelt piiratud JSONP varuvariant;
@@ -22,7 +22,7 @@ Versioon 4.2.0 säilitab 4.1.0 Vite + TypeScripti arhitektuuri ja paigutuse, kui
 ```text
 index.html
 package.json
-public/                 runtime-configi mall ja demoandmed
+public/                 demoandmed; runtime-config jääb juurkausta `config.js` faili
 src/app/                bootstrap, store, scheduler, lifecycle
 src/config/             runtime-configi valideerimine
 src/domain/             puhas ajatsoonist sõltuv äriloogika
@@ -30,7 +30,8 @@ src/data/               tüübid, valideerimine, transport ja merge
 src/cache/              IndexedDB repository
 src/ui/                 paneelid, graafikud ja teksti sobitamine
 src/styles/             tokenid, paigutus, ööteema ja paneelide CSS
-src/diagnostics/        logimine ja debug-overlay
+src/diagnostics/        logimine
+src/ui/debug-overlay.ts silumisülekatte UI
 tests/                  unit-, contract-, integration-, DOM- ja E2E-testid
 apps-script/            Google Apps Scripti failid
 kiosk/                  Windowsi server, käivitus ja watchdog
@@ -52,9 +53,9 @@ npm run build
 npm run test:visual
 ```
 
-Pärast esimese `npm install` käivitamist lisa genereeritud `package-lock.json` versioonihaldusse; seejärel kasuta tavapäraselt `npm ci`.
+`package-lock.json` on versioonihalduses. Reprodutseeritava paigalduse jaoks kasuta tavapäraselt `npm ci`; `npm install` on vajalik ainult sõltuvuste teadlikul uuendamisel.
 
-Isolatsiooniga keskkonna jaoks on kaasas varuehitus, mis kasutab globaalselt paigaldatud TypeScripti kompilaatorit:
+Isolatsiooniga keskkonna jaoks on kaasas varuehitus, mis käivitab projekti lukustatud kohaliku TypeScripti `tsc` CLI (`node_modules/typescript/lib/tsc.js`) ilma Vite runtime'ita:
 
 ```bash
 npm run build:fallback
@@ -66,14 +67,14 @@ Varuehitus ei asenda Vite kvaliteediväravat, kuid võimaldab genereerida ja kon
 ## Jõudluse mõõtmine
 
 ```bash
-npm run build
-node tools/measure.mjs --hours 24
+npm run measure:check
 ```
 
 Käivitab rakenduse päris Chromiumis 1920 × 1080 juures kiirendatud kellaga ja
 raporteerib bundle'i mahud, esimese täisrenderduse aja, DOM- ja SVG-sõlmede arvu,
-loodud elementide arvu, sunnitud reflow'd, kuulajad ja JS-kuhja. `--json fail.json`
-salvestab tooranded. Kui brauser on juba masinas olemas, saab selle ette anda
+loodud elementide arvu, sunnitud reflow'd, kuulajad ja JS-kuhja. `measure:check`
+kukub läbi, kui 24 h jooksul luuakse üle 1000 HTML- või üle 200 SVG-elemendi.
+`node tools/measure.mjs --hours 24 --json fail.json` salvestab toorandmed. Kui brauser on juba masinas olemas, saab selle ette anda
 muutujaga `PLAYWRIGHT_CHROMIUM_EXECUTABLE`; sama muutuja kehtib ka
 `npm run test:visual` jaoks.
 
@@ -102,12 +103,12 @@ window.KU_CONFIG = {
   nightThemeEndHour: 6,
   nightlyReloadHour: 4,
   nightlyReloadMinute: 10,
-  buildVersion: "4.2.0",
-  buildDate: "2026-08-25"
+  buildVersion: "4.4.0",
+  buildDate: "2026-08-27"
 };
 ```
 
-Ära lisa päris URL-i ega tokenit `src/`, `public/` ega versioonihaldusse. `config.js` ja `public/config.js` on `.gitignore`-s; versioonihalduses on ainult `config.example.js`.
+Ära lisa päris URL-i ega tokenit `src/`, `public/` ega versioonihaldusse. `config.js` on `.gitignore`-s; versioonihalduses on ainult `config.example.js`.
 
 ## Google Sheetsi leping
 
@@ -182,7 +183,7 @@ http://127.0.0.1:8765/?demo=1&notices=0
 http://127.0.0.1:8765/?debug=1
 ```
 
-Demorežiimis ei tehta välispäringuid ega reload'e. Visuaalregressioon kasutab fikseeritud kella, kuut 1920 × 1080 olekut ja projekti kaasapandud baselinesid.
+Demorežiimis ei tehta välispäringuid ega reload'e. Visuaalregressioon kasutab fikseeritud kella ja kuut 1920 × 1080 olekut. Commit'itud baseline'e tohib release-tõendina kasutada alles siis, kui nende `build-version.txt` vastab projekti versioonile; 4.4.0 puhul on vana baseline teadlik release-blokeerija kuni `npm run test:visual:update` käivitamiseni kioskiga võrreldaval masinal.
 
 ## Offline-käitumine
 
