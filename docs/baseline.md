@@ -170,7 +170,22 @@ brauseripoolne osa sai tõendatud:
   404-d puuduvale `config.js`-ile ja `/heartbeat`-ile, mida serveerib alles
   kioski PowerShelli server.
 - **Jõudluseelarve värav töötab.** `npm run measure:check` läbis 24 h
-  kiirendatud sessiooniga.
+  kiirendatud sessiooniga (väljundi viimane rida
+  `Jõudluseelarve läbitud: HTML ≤ 1000, SVG ≤ 200`, väljumiskood 0).
+
+| Mõõdik | 4.3.0 | 4.4.0 | Eelarve |
+|---|---:|---:|---:|
+| Loodud HTML-elemente 24 h | 266 | 266 | ≤ 1000 |
+| Loodud SVG-elemente 24 h | 64 | 64 | ≤ 200 |
+| DOM-sõlmi (algus → 24 h) | 398 → 398 | 399 → 399 | stabiilne |
+| Sunnitud reflow'sid 24 h | 24 | 24 | — |
+| `addEventListener` kokku | 23 | 23 | — |
+| `index.html` | 9 035 B | 9 395 B | — |
+
+DOM-sõlmede 398 → 399 vahe on CSP meta-silt `<head>`-is; `querySelectorAll("*")`
+loeb ka `<head>` elemendid. `index.html` kasvas sama sildi võrra 360 baiti.
+Renderdusega seotud numbrid on muutumatud, mis oligi 4.4.0 eesmärk: muudatused
+puudutavad tüübilepingut, kihijaotust ja release-väravat, mitte renderdust.
 
 Commit'itud PNG-baseline'ide seis ei muutu: need on endiselt 4.0.0 päritolu ja
 neid ei tohi selle keskkonna fontidega üle kirjutada.
