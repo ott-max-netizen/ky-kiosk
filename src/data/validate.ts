@@ -30,6 +30,32 @@ export interface ValidationResult<T> {
 const MAX_TEXT = 500;
 const MAX_BODY = 12_000;
 
+/**
+ * Usutavusvahemikud välistele turu- ja ilmaandmetele.
+ *
+ * Parserid tagastavad juba `null`-i, kui väli puudub või ei ole arv, nii et
+ * struktuurimuutus annab tavaliselt „andmed puuduvad“. Ohtlikum juht on ühiku
+ * vaikne muutus ülesvoolu — sendid euro asemel, €/MWh €/kWh asemel — mis annab
+ * täiesti usutava kujuga, aga sajakordselt vale arvu. Vahemikud on meelega laiad
+ * (päris andmed ei jõua nendeni kunagi), aga püüavad kinni suurusjärgu nihke.
+ * Väljaspool vahemikku olev väärtus käsitletakse puuduvana ja sellest teatatakse,
+ * sest vale number ekraanil on halvem kui kriips.
+ */
+const PLAUSIBLE = {
+  /** Jaehind EUR/l. Eestis ~1,0–2,5; ×100 või ÷100 nihe jääb välja. */
+  fuelEurPerLitre: { min: 0.2, max: 5 },
+  /** 6 kuu Euribor protsentides; ajalooline vahemik on –1…6. */
+  euriborPercent: { min: -5, max: 25 },
+  /** Elektri ostuhind s/kWh koos KM-ga; negatiivsed börsihinnad on tavalised. */
+  electricityCentsPerKwh: { min: -200, max: 500 },
+  celsius: { min: -70, max: 60 },
+  windMetresPerSecond: { min: 0, max: 120 },
+} as const;
+
+function inRange(value: number | null, range: { min: number; max: number }): boolean {
+  return value !== null && value >= range.min && value <= range.max;
+}
+
 export function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }
@@ -139,6 +165,13 @@ function validateWeatherCurrent(value: unknown): WeatherCurrent | null {
   const windSpeed = finite(value.windSpeed);
   if (temperature === null || apparentTemperature === null || weatherCode === null || windSpeed === null)
     return null;
+  if (
+    !inRange(temperature, PLAUSIBLE.celsius) ||
+    !inRange(apparentTemperature, PLAUSIBLE.celsius) ||
+    !inRange(windSpeed, PLAUSIBLE.windMetresPerSecond)
+  ) {
+    return null;
+  }
   const result: WeatherCurrent = { temperature, apparentTemperature, weatherCode, windSpeed };
   const optionalNumbers: Array<[keyof WeatherCurrent, unknown]> = [
     ["relativeHumidity", value.relativeHumidity],
@@ -182,7 +215,7 @@ function validateWeatherDaily(value: unknown): WeatherDaily | null {
   };
 }
 
-function validateWeather(value: unknown): WeatherData | null {
+function validateWeather(value: unknown, _problems: string[] = []): WeatherData | null {
   if (!isRecord(value)) return null;
   const current = validateWeatherCurrent(value.current);
   if (!current) return null;
@@ -221,7 +254,7 @@ function validateHouseMonth(value: unknown): HouseMonth | null {
   };
 }
 
-function validateHouse(value: unknown): HouseData | null {
+function validateHouse(value: unknown, _problems: string[] = []): HouseData | null {
   if (!isRecord(value) || !Array.isArray(value.months)) return null;
   const months = value.months.map(validateHouseMonth).filter((item): item is HouseMonth => item !== null);
   const result: HouseData = { months };
@@ -235,6 +268,7 @@ function validateElectricityPoint(value: unknown): ElectricityPoint | null {
   const time = clampText(value.time, 80);
   const price = finite(value.price);
   if (!time || price === null || Number.isNaN(Date.parse(time))) return null;
+  if (!inRange(price, PLAUSIBLE.electricityCentsPerKwh)) return null;
   const result: ElectricityPoint = { time, price };
   if (value.tariffType === "day" || value.tariffType === "night") result.tariffType = value.tariffType;
   const label = clampText(value.tariffLabelEt, 80);
@@ -279,11 +313,17 @@ function validateElectricity(value: unknown, problems: string[]): ElectricityDat
   return result;
 }
 
-function validateFuel(value: unknown): FuelData | null {
+function validateFuel(value: unknown, problems: string[]): FuelData | null {
   if (!isRecord(value)) return null;
-  const petrol95 = nullableFinite(value.petrol95);
-  const petrol98 = nullableFinite(value.petrol98);
-  const diesel = nullableFinite(value.diesel);
+  const guard = (raw: unknown, label: string): number | null => {
+    const number = nullableFinite(raw);
+    if (number === null || inRange(number, PLAUSIBLE.fuelEurPerLitre)) return number;
+    problems.push(`Kütusehind ${label} on väljaspool usutavat vahemikku: ${number}`);
+    return null;
+  };
+  const petrol95 = guard(value.petrol95, "95");
+  const petrol98 = guard(value.petrol98, "98");
+  const diesel = guard(value.diesel, "D");
   if (petrol95 === null && petrol98 === null && diesel === null) return null;
   const result: FuelData = {
     petrol95,
@@ -306,13 +346,18 @@ function validateEuriborPoint(value: unknown): EuriborPoint | null {
   if (!isRecord(value)) return null;
   const date = clampText(value.date, 20);
   const number = finite(value.value);
-  return date && number !== null ? { date, value: number } : null;
+  if (!date || !inRange(number, PLAUSIBLE.euriborPercent)) return null;
+  return { date, value: number as number };
 }
 
-function validateEuribor(value: unknown): EuriborData | null {
+function validateEuribor(value: unknown, problems: string[]): EuriborData | null {
   if (!isRecord(value)) return null;
   const latest = finite(value.latest);
   const latestDate = clampText(value.latestDate, 20);
+  if (latest !== null && !inRange(latest, PLAUSIBLE.euriborPercent)) {
+    problems.push(`Euribor on väljaspool usutavat vahemikku: ${latest}`);
+    return null;
+  }
   if (latest === null || !latestDate) return null;
   const points = Array.isArray(value.points)
     ? value.points
@@ -386,7 +431,9 @@ export function validateDashboardPayload(input: unknown): ValidationResult<Incom
     if (Array.isArray(validated)) output[name] = validated as never;
     else if (Object.prototype.hasOwnProperty.call(input, name)) problems.push(`${name}: oodati massiivi`);
   }
-  const objectSections: Array<["weather" | "house" | "fuel" | "euribor", (value: unknown) => unknown]> = [
+  const objectSections: Array<
+    ["weather" | "house" | "fuel" | "euribor", (value: unknown, problems: string[]) => unknown]
+  > = [
     ["weather", validateWeather],
     ["house", validateHouse],
     ["fuel", validateFuel],
@@ -394,7 +441,7 @@ export function validateDashboardPayload(input: unknown): ValidationResult<Incom
   ];
   for (const [name, validator] of objectSections) {
     if (!Object.prototype.hasOwnProperty.call(input, name)) continue;
-    const value = validator(input[name]);
+    const value = validator(input[name], problems);
     if (value) output[name] = value as never;
     else if (input[name] !== null) problems.push(`${name}: vigane väärtus`);
   }
