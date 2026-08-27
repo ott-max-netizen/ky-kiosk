@@ -4,13 +4,25 @@ import { busRelativeLabel, getBusState } from "../../domain/bus/departures";
 import { busDayTypeLabel } from "../../domain/bus/day-type";
 import { getFormatters } from "../../domain/time/formatters";
 import { zonedParts } from "../../domain/time/zoned";
-import { clearElement, createElement, requireElement, setClass, setText } from "../dom";
+import { createElement, requireElement, setClass, setText } from "../dom";
+import { reconcileChildren } from "../reconcile";
 import type { Panel } from "./panel";
 
 export interface BusesSlice {
   timetable: BusTimetable | null;
   now: Date;
   config: RuntimeConfig;
+}
+
+function createDepartureCard(): HTMLElement {
+  const card = createElement("div", "bus-departure");
+  card.append(
+    createElement("div", "bus-departure-day"),
+    createElement("div", "bus-departure-time numeric"),
+    createElement("div", "bus-line numeric"),
+    createElement("div", "bus-relative numeric"),
+  );
+  return card;
 }
 
 function dayLabel(item: BusDeparture, timeZone: string): string {
@@ -70,21 +82,25 @@ export class BusesPanel implements Panel<BusesSlice> {
   }
 
   private renderDirection(area: HTMLElement, items: BusDeparture[], timeZone: string, hasTimetable: boolean): void {
-    clearElement(area);
+    const emptyText = hasTimetable ? "Järgmisi väljumisi sõiduplaanist ei leitud." : "Bussisõiduplaani fail puudub.";
     if (!items.length) {
-      area.appendChild(createElement("div", "bus-empty", hasTimetable ? "Järgmisi väljumisi sõiduplaanist ei leitud." : "Bussisõiduplaani fail puudub."));
+      const existing = area.firstElementChild as HTMLElement | null;
+      if (existing?.classList.contains("bus-empty") && area.childElementCount === 1) setText(existing, emptyText);
+      else area.replaceChildren(createElement("div", "bus-empty", emptyText));
       return;
     }
-    for (const item of items) {
-      const card = createElement("div", "bus-departure");
+    if (area.firstElementChild?.classList.contains("bus-empty")) area.replaceChildren();
+    // Väljumisi uuendatakse iga minutivahetuse järel; kaardid on taaskasutatavad.
+    reconcileChildren(area, items, createDepartureCard, (card, item) => {
       card.title = item.note;
-      const day = createElement("div", "bus-departure-day", dayLabel(item, timeZone));
-      day.classList.add(item.dayOffset === 0 ? "is-today" : item.dayOffset === 1 ? "is-tomorrow" : "is-future");
-      const time = createElement("div", "bus-departure-time numeric", item.time);
-      const line = createElement("div", "bus-line numeric", `Liin ${item.line}`);
-      const relative = createElement("div", "bus-relative numeric", busRelativeLabel(item));
-      card.append(day, time, line, relative);
-      area.appendChild(card);
-    }
+      const [day, time, line, relative] = card.children as unknown as [HTMLElement, HTMLElement, HTMLElement, HTMLElement];
+      setText(day, dayLabel(item, timeZone));
+      setClass(day, "is-today", item.dayOffset === 0);
+      setClass(day, "is-tomorrow", item.dayOffset === 1);
+      setClass(day, "is-future", item.dayOffset > 1);
+      setText(time, item.time);
+      setText(line, `Liin ${item.line}`);
+      setText(relative, busRelativeLabel(item));
+    });
   }
 }

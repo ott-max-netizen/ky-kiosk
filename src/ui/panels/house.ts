@@ -12,7 +12,8 @@ import {
   type HouseMonth,
 } from "../../domain/house/consumption";
 import { svgElement } from "../charts/svg";
-import { clearElement, createElement, requireElement, setText } from "../dom";
+import { createElement, requireElement, setClass, setText } from "../dom";
+import { reconcileCount } from "../reconcile";
 import { updateSectionStale } from "./helpers";
 import type { Panel } from "./panel";
 
@@ -24,6 +25,13 @@ export interface HouseSlice {
 type HouseViewIndex = 0 | 1 | 2;
 
 const VIEW_INTERVAL_MS = 8_000;
+/**
+ * Kiosk peidab kursori ja hiirt tavaliselt ei puututa, aga kui osuti jääb maja
+ * paneeli kohale seisma, ei pruugi `pointerleave` enam kunagi käivituda ja
+ * rotatsioon jääks igaveseks seisma. Paus vabaneb hiljemalt selle aja pärast,
+ * nii et C-19 kolm vaadet liiguvad alati edasi.
+ */
+const MAX_PAUSE_MS = 60_000;
 const VIEW_LABELS = ["Viimase kuu näitajad", "Viimase 12 kuu trendid", "Jooksva aasta koondnäitajad"] as const;
 const SERIES_CLASS: Record<HouseMetricKey, string> = {
   waterM3: "house-water",
@@ -79,10 +87,15 @@ export class HousePanel implements Panel<HouseSlice> {
   private indicator!: HTMLElement;
   private mounted = false;
   private paused = false;
+  private pausedAtMs = 0;
   private activeView: HouseViewIndex = 0;
   private nextSwitchAt = 0;
   private months: HouseMonth[] = [];
   private monthsSource: HouseMonth[] | null = null;
+  // Kolm vaadet ehitatakse andmete muutumisel ja neid hoitakse alles. Rotatsioon
+  // vahetab ainult seda, milline neist on küljes, ega loo ühtki uut elementi.
+  private readonly views = new Map<HouseViewIndex, HTMLElement>();
+  private empty: HTMLElement | null = null;
 
   private readonly onPointerEnter = () => this.pause();
   private readonly onPointerLeave = () => this.resume();
@@ -109,7 +122,10 @@ export class HousePanel implements Panel<HouseSlice> {
     const source = slice.data.house?.months ?? [];
     const changed = source !== this.monthsSource;
     this.monthsSource = source;
-    if (changed) this.months = sortHouseMonths(source);
+    if (changed) {
+      this.months = sortHouseMonths(source);
+      this.views.clear();
+    }
 
     const latest = getLatestHouseMonth(this.months);
     setText(this.period, formatLatestPeriod(latest));
@@ -122,14 +138,19 @@ export class HousePanel implements Panel<HouseSlice> {
     }
 
     if (!this.nextSwitchAt) this.nextSwitchAt = Date.now() + VIEW_INTERVAL_MS;
-    if (changed || !this.area.firstChild) this.renderActiveView();
+    if (changed || !this.area.firstChild) this.showActiveView();
   }
 
   tick(nowMs = Date.now()): void {
-    if (!this.mounted || this.paused || !this.months.length || !this.nextSwitchAt || nowMs < this.nextSwitchAt) return;
+    if (!this.mounted) return;
+    if (this.paused) {
+      if (nowMs - this.pausedAtMs < MAX_PAUSE_MS) return;
+      this.resume(nowMs);
+    }
+    if (!this.months.length || !this.nextSwitchAt || nowMs < this.nextSwitchAt) return;
     this.activeView = ((this.activeView + 1) % 3) as HouseViewIndex;
     this.nextSwitchAt = nowMs + VIEW_INTERVAL_MS;
-    this.renderActiveView();
+    this.showActiveView();
   }
 
   destroy(): void {
@@ -142,49 +163,71 @@ export class HousePanel implements Panel<HouseSlice> {
     this.monthsSource = null;
     this.months = [];
     this.nextSwitchAt = 0;
+    this.paused = false;
+    this.pausedAtMs = 0;
+    this.views.clear();
+    this.empty = null;
   }
 
   private pause(): void {
+    if (this.paused) return;
     this.paused = true;
+    this.pausedAtMs = Date.now();
   }
 
-  private resume(): void {
+  private resume(nowMs = Date.now()): void {
     if (!this.paused) return;
     this.paused = false;
-    this.nextSwitchAt = Date.now() + VIEW_INTERVAL_MS;
+    this.pausedAtMs = 0;
+    this.nextSwitchAt = nowMs + VIEW_INTERVAL_MS;
   }
 
   private renderEmpty(): void {
-    clearElement(this.area);
     setText(this.period, "");
+    this.views.clear();
     this.updateIndicator();
-    const empty = createElement("div", "house-empty empty", "Andmed puuduvad");
-    empty.setAttribute("role", "status");
-    this.area.appendChild(empty);
+    if (this.empty && this.empty.parentNode === this.area && this.area.childElementCount === 1) return;
+    this.empty = createElement("div", "house-empty empty", "Andmed puuduvad");
+    this.empty.setAttribute("role", "status");
+    this.area.replaceChildren(this.empty);
   }
 
-  private renderActiveView(): void {
-    clearElement(this.area);
-    const view = this.activeView === 0
+  private buildView(index: HouseViewIndex): HTMLElement {
+    const view = index === 0
       ? this.renderCurrentMonthView()
-      : this.activeView === 1
+      : index === 1
         ? this.renderTrendView()
         : this.renderYearSummaryView();
-    view.classList.add("house-view", "house-view-enter");
+    view.classList.add("house-view");
     view.setAttribute("role", "group");
-    view.setAttribute("aria-label", VIEW_LABELS[this.activeView]);
-    this.area.appendChild(view);
+    view.setAttribute("aria-label", VIEW_LABELS[index]);
+    return view;
+  }
+
+  private showActiveView(): void {
+    this.empty = null;
+    let view = this.views.get(this.activeView);
+    if (!view) {
+      view = this.buildView(this.activeView);
+      this.views.set(this.activeView, view);
+    }
+    if (this.area.firstElementChild !== view) this.area.replaceChildren(view);
+    // Taaskasutatud sõlmel tuleb sissetuleku animatsioon käsitsi uuesti käivitada:
+    // klass on juba küljes, nii et brauser ei loeks seda uueks animatsiooniks.
+    view.classList.remove("house-view-enter");
+    void view.offsetWidth;
+    view.classList.add("house-view-enter");
     this.updateIndicator();
   }
 
   private updateIndicator(): void {
-    clearElement(this.indicator);
     this.indicator.setAttribute("aria-label", `Vaade ${this.activeView + 1} kolmest: ${VIEW_LABELS[this.activeView]}`);
-    for (let index = 0; index < 3; index += 1) {
-      const dot = createElement("span", `house-view-dot${index === this.activeView ? " is-active" : ""}`);
+    const dots = reconcileCount(this.indicator, 3, () => {
+      const dot = createElement("span", "house-view-dot");
       dot.setAttribute("aria-hidden", "true");
-      this.indicator.appendChild(dot);
-    }
+      return dot;
+    });
+    dots.forEach((dot, index) => setClass(dot, "is-active", index === this.activeView));
   }
 
   private renderCurrentMonthView(): HTMLElement {

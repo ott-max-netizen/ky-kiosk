@@ -2,7 +2,8 @@ import type { WasteItem, WasteOccurrence } from "../../domain/waste/occurrences"
 import { nextWasteByType } from "../../domain/waste/occurrences";
 import { zonedParts } from "../../domain/time/zoned";
 import { pageItems } from "../../domain/contacts/paging";
-import { clearElement, createElement, requireElement, setText } from "../dom";
+import { createElement, requireElement, setClass, setText } from "../dom";
+import { reconcileChildren } from "../reconcile";
 import { formatDateValue, updatePageLabel } from "./helpers";
 import type { Panel } from "./panel";
 
@@ -16,9 +17,22 @@ export interface WasteSlice {
   onWarnings?(warnings: string[]): void;
 }
 
+function createRow(): HTMLElement {
+  const row = createElement("div", "waste-row");
+  const track = createElement("div", "waste-track");
+  track.append(createElement("div", "waste-progress"), createElement("div", "waste-marker"));
+  const date = createElement("div", "waste-date numeric");
+  date.append(createElement("strong"), createElement("span"));
+  row.append(createElement("div", "waste-name"), track, date);
+  return row;
+}
+
 export class WastePanel implements Panel<WasteSlice> {
   private area!: HTMLElement;
   private windowLabel!: HTMLElement;
+  private axis: HTMLElement | null = null;
+  private empty: HTMLElement | null = null;
+  private axisWindowDays = 0;
   private slice: WasteSlice = { items: [], now: new Date(), timeZone: "Europe/Tallinn", windowDays: 30, pageSize: 5, rotationMs: 18_000 };
   private occurrences: WasteOccurrence[] = [];
   private page = 0;
@@ -63,42 +77,62 @@ export class WastePanel implements Panel<WasteSlice> {
 
   destroy(): void {
     this.mounted = false;
+    this.axis = null;
+    this.empty = null;
+    this.axisWindowDays = 0;
   }
 
   private render(): void {
-    clearElement(this.area);
     setText(this.windowLabel, String(this.slice.windowDays));
     const page = pageItems(this.occurrences, this.page, this.slice.pageSize);
     this.page = page.page;
     updatePageLabel("wastePageLabel", this.occurrences.length, page.pageSize, page.page);
+
+    const emptyText = `Järgmise ${this.slice.windowDays} päeva prügivedusid ei ole sisestatud.`;
     if (!this.occurrences.length) {
-      this.area.appendChild(createElement("div", "empty", `Järgmise ${this.slice.windowDays} päeva prügivedusid ei ole sisestatud.`));
+      if (!this.empty) {
+        this.area.replaceChildren();
+        this.axis = null;
+        this.axisWindowDays = 0;
+        this.empty = createElement("div", "empty", emptyText);
+        this.area.appendChild(this.empty);
+      } else {
+        setText(this.empty, emptyText);
+      }
       return;
     }
-    for (const occurrence of page.items) this.renderOccurrence(occurrence);
-    this.renderAxis();
+    if (this.empty) {
+      this.empty.remove();
+      this.empty = null;
+    }
+    // Read on `#wasteChart`-i otsesed lapsed (flex gap sõltub sellest), telg on
+    // viimane laps. Telg võetakse lepitamise ajaks välja ja pannakse pärast
+    // tagasi — sama sõlm, mitte uus, nii et lisa-elemente ei teki.
+    this.axis?.remove();
+    reconcileChildren(this.area, page.items, createRow, (row, occurrence) => this.patchRow(row, occurrence));
+    this.appendAxis();
   }
 
-  private renderOccurrence({ item, days }: WasteOccurrence): void {
+  private patchRow(row: HTMLElement, { item, days }: WasteOccurrence): void {
     const pct = Math.min(100, Math.max(0, (days / this.slice.windowDays) * 100));
-    const row = createElement("div", "waste-row");
-    const name = createElement("div", "waste-name", item.type || "Jäätmed");
-    const track = createElement("div", "waste-track");
-    const progress = createElement("div", "waste-progress");
-    progress.style.width = `${pct}%`;
-    const marker = createElement("div", "waste-marker");
-    marker.style.left = `${pct}%`;
-    track.append(progress, marker);
-    const date = createElement("div", "waste-date numeric");
-    const strong = createElement("strong", undefined, days === 0 ? "Täna" : days === 1 ? "Homme" : `${days} p`);
-    if (days <= 1) strong.classList.add("is-word");
-    const small = createElement("span", undefined, formatDateValue(item.date, "dayMonth", this.slice.timeZone));
-    date.append(strong, small);
-    row.append(name, track, date);
-    this.area.appendChild(row);
+    const [name, track, date] = row.children as unknown as [HTMLElement, HTMLElement, HTMLElement];
+    setText(name, item.type || "Jäätmed");
+    const [progress, marker] = track.children as unknown as [HTMLElement, HTMLElement];
+    const width = `${pct}%`;
+    if (progress.style.width !== width) progress.style.width = width;
+    if (marker.style.left !== width) marker.style.left = width;
+    const [strong, small] = date.children as unknown as [HTMLElement, HTMLElement];
+    setText(strong, days === 0 ? "Täna" : days === 1 ? "Homme" : `${days} p`);
+    setClass(strong, "is-word", days <= 1);
+    setText(small, formatDateValue(item.date, "dayMonth", this.slice.timeZone));
   }
 
-  private renderAxis(): void {
+  /** Telg sõltub ainult aknast; varem ehitati ta iga 18 s pöörde peal uuesti. */
+  private appendAxis(): void {
+    if (this.axis && this.axisWindowDays === this.slice.windowDays) {
+      this.area.appendChild(this.axis);
+      return;
+    }
     const axis = createElement("div", "axis");
     axis.appendChild(createElement("div"));
     const labels = createElement("div", "axis-labels numeric");
@@ -110,5 +144,7 @@ export class WastePanel implements Panel<WasteSlice> {
     }
     axis.append(labels, createElement("div"));
     this.area.appendChild(axis);
+    this.axis = axis;
+    this.axisWindowDays = this.slice.windowDays;
   }
 }

@@ -153,6 +153,12 @@ export class AppView {
 
   updateDebug(): void {
     if (!this.state) return;
+    // Ilma selle väravata arvutati bussigraafiku olek ja ajavööndi osad iga 10 s
+    // ja iga oleku uuenduse peale ka siis, kui overlay on välja lülitatud.
+    if (!this.debugMode) {
+      this.debug.update({ state: this.state, config: this.config, enabled: false, schedulerNames: [], busDebug: "" });
+      return;
+    }
     const timeZone = this.state.data.settings.timeZone || this.config.timeZone;
     this.debug.update({
       state: this.state,

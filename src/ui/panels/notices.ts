@@ -2,7 +2,8 @@ import type { Notice } from "../../data/types";
 import { activeNotices } from "../../domain/notices/active";
 import { applyNoticeLayout } from "../layout";
 import { clearNoticeFitCache, fitNoticeToPages, type NoticePage } from "../text-fit";
-import { clearElement, createElement, requireElement, setText } from "../dom";
+import { clearElement, createElement, requireElement, setClass, setText } from "../dom";
+import { reconcileCount } from "../reconcile";
 import type { Panel } from "./panel";
 
 const TYPE_LABELS: Record<string, string> = {
@@ -127,11 +128,9 @@ export class NoticesPanel implements Panel<NoticesSlice> {
   }
 
   private renderPager(): void {
-    clearElement(this.pager);
-    if (this.notices.length <= 1) return;
-    for (let index = 0; index < this.notices.length; index += 1) {
-      const dot = createElement("span", `pager-dot${index === this.noticeIndex ? " active" : ""}`);
-      this.pager.appendChild(dot);
-    }
+    // Punktid ehitati varem iga 14 s pöörde peal uuesti; nüüd vahetub ainult klass.
+    const count = this.notices.length <= 1 ? 0 : this.notices.length;
+    const dots = reconcileCount(this.pager, count, () => createElement("span", "pager-dot"));
+    dots.forEach((dot, index) => setClass(dot, "active", index === this.noticeIndex));
   }
 }

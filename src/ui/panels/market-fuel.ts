@@ -1,5 +1,6 @@
 import type { DashboardData } from "../../data/types";
-import { clearElement, createElement, formatNumber, requireElement, setText } from "../dom";
+import { createElement, formatNumber, requireElement, setHidden, setText } from "../dom";
+import { reconcileChildren } from "../reconcile";
 import { formatDateValue, sectionUpdatedTime } from "./helpers";
 import type { Panel } from "./panel";
 
@@ -25,25 +26,41 @@ export class MarketFuelPanel implements Panel<FuelSlice> {
 
   update(slice: FuelSlice): void {
     this.mount();
-    clearElement(this.values);
     const data = slice.data.fuel;
     if (!data) {
       setText(this.meta, "Eesti keskmine");
-      this.values.appendChild(createElement("div", "market-empty", "Kütusehind puudub"));
+      const existing = this.values.firstElementChild as HTMLElement | null;
+      if (existing?.classList.contains("market-empty") && this.values.childElementCount === 1) setText(existing, "Kütusehind puudub");
+      else this.values.replaceChildren(createElement("div", "market-empty", "Kütusehind puudub"));
       this.applyStale(slice.data);
       return;
     }
+    if (this.values.firstElementChild?.classList.contains("market-empty")) this.values.replaceChildren();
     setText(this.meta, `Eesti keskmine${data.displayDate || data.bulletinDate ? ` · ${formatDateValue(data.displayDate || data.bulletinDate, "dayMonth", slice.timeZone)}` : ""}`);
     const updated = sectionUpdatedTime(slice.data, "fuel", slice.timeZone);
     setText(this.source, [`${data.source || "OpenVan.camp"} · Eesti nädala keskmine`, updated ? `andmed ${updated}` : ""].filter(Boolean).join(" · "));
-    for (const [kind, price] of [["95", data.petrol95], ["98", data.petrol98], ["D", data.diesel]] as const) {
-      const row = createElement("div", "market-fuel-row");
-      const priceElement = createElement("strong", "market-fuel-price numeric");
-      if (price === null || !Number.isFinite(price)) priceElement.textContent = "–";
-      else priceElement.append(document.createTextNode(`${formatNumber(price, 3)} €`), createElement("small", undefined, "/l"));
-      row.append(createElement("span", "market-fuel-kind", kind), priceElement);
-      this.values.appendChild(row);
-    }
+    // Kolm rida uuenevad iga sünkroonimisega; sõlmed on taaskasutatavad.
+    const rows = [["95", data.petrol95], ["98", data.petrol98], ["D", data.diesel]] as const;
+    reconcileChildren(
+      this.values,
+      rows,
+      () => {
+        const row = createElement("div", "market-fuel-row");
+        const priceElement = createElement("strong", "market-fuel-price numeric");
+        priceElement.append(document.createTextNode("–"), createElement("small", undefined, "/l"));
+        row.append(createElement("span", "market-fuel-kind"), priceElement);
+        return row;
+      },
+      (row, [kind, price]) => {
+        setText(row.firstElementChild as HTMLElement, kind);
+        const priceElement = row.lastElementChild as HTMLElement;
+        const missing = price === null || !Number.isFinite(price);
+        const valueNode = priceElement.firstChild as Text;
+        const text = missing ? "–" : `${formatNumber(price as number, 3)} €`;
+        if (valueNode.data !== text) valueNode.data = text;
+        setHidden(priceElement.lastElementChild as HTMLElement, missing);
+      },
+    );
     this.applyStale(slice.data);
   }
 

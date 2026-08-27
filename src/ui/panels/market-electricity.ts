@@ -1,7 +1,8 @@
 import type { DashboardData, ElectricityPoint } from "../../data/types";
 import { electricityDateIsToday, marketCurrentIndex, priceToCentsPerKwh } from "../../domain/electricity/price";
 import { ElectricityChart } from "../charts/electricity-chart";
-import { clearElement, createElement, formatNumber, requireElement, setText } from "../dom";
+import { createElement, formatNumber, requireElement, setHidden, setText } from "../dom";
+import { reconcileChildren } from "../reconcile";
 import { formatDateValue, sectionUpdatedTime } from "./helpers";
 import type { Panel } from "./panel";
 
@@ -20,6 +21,8 @@ export class MarketElectricityPanel implements Panel<ElectricitySlice> {
   private stale!: HTMLElement;
   private card!: HTMLElement;
   private chart!: ElectricityChart;
+  private currentValue!: Text;
+  private currentUnit!: HTMLElement;
   private mounted = false;
 
   mount(): void {
@@ -33,6 +36,11 @@ export class MarketElectricityPanel implements Panel<ElectricitySlice> {
     this.card = requireElement("electricityCard");
     this.chart = new ElectricityChart(this.chartContainer);
     this.chart.mount();
+    // Praeguse hinna number ja ühik on püsivad sõlmed: neid uuendatakse iga
+    // minutivahetuse järel ja varem loodi mõlemad iga kord uuesti.
+    this.currentValue = document.createTextNode("–");
+    this.currentUnit = createElement("small", undefined, "s/kWh");
+    this.current.replaceChildren(this.currentValue, this.currentUnit);
     this.mounted = true;
   }
 
@@ -40,15 +48,17 @@ export class MarketElectricityPanel implements Panel<ElectricitySlice> {
     this.mount();
     const value = slice.data.electricity;
     const points = this.normalizedPoints(value?.points ?? [], value?.unit);
-    clearElement(this.stats);
     if (!value || !points.length) {
       setText(this.meta, "Täna · s/kWh · KM 24%");
       this.setCurrent(null);
       this.chart.update([], -1);
-      this.stats.appendChild(createElement("div", "market-empty", "Elektrihind puudub"));
+      const existing = this.stats.firstElementChild as HTMLElement | null;
+      if (existing?.classList.contains("market-empty") && this.stats.childElementCount === 1) setText(existing, "Elektrihind puudub");
+      else this.stats.replaceChildren(createElement("div", "market-empty", "Elektrihind puudub"));
       this.applyStale(slice.data);
       return;
     }
+    if (this.stats.firstElementChild?.classList.contains("market-empty")) this.stats.replaceChildren();
     const today = electricityDateIsToday(value.date, slice.now, slice.timeZone);
     const currentIndex = today ? marketCurrentIndex(points, slice.now) : -1;
     const currentPoint = currentIndex >= 0 ? points[currentIndex] : undefined;
@@ -64,11 +74,20 @@ export class MarketElectricityPanel implements Panel<ElectricitySlice> {
       ["keskm", prices.length ? prices.reduce((sum, number) => sum + number, 0) / prices.length : null],
       ["max", prices.length ? Math.max(...prices) : null],
     ] as const;
-    for (const [label, number] of stats) {
-      const item = createElement("div", "market-stat");
-      item.append(createElement("span", "market-stat-label", label), createElement("strong", "market-stat-value numeric", number === null ? "–" : formatNumber(number, 2)));
-      this.stats.appendChild(item);
-    }
+    // Kolm statistikarida uuenevad iga minut; sildid ja sõlmed jäävad püsima.
+    reconcileChildren(
+      this.stats,
+      stats,
+      () => {
+        const item = createElement("div", "market-stat");
+        item.append(createElement("span", "market-stat-label"), createElement("strong", "market-stat-value numeric"));
+        return item;
+      },
+      (item, [label, number]) => {
+        setText(item.firstElementChild as HTMLElement, label);
+        setText(item.lastElementChild as HTMLElement, number === null ? "–" : formatNumber(number, 2));
+      },
+    );
     const updated = sectionUpdatedTime(slice.data, "electricity", slice.timeZone);
     const sourceText = value.tariffSource ? "Elering + Elekter · muutuvtasud · püsitasudeta" : "Elering · Nord Pool · s/kWh koos 24% KM-ga";
     setText(this.source, [sourceText, updated ? `andmed ${updated}` : ""].filter(Boolean).join(" · "));
@@ -88,12 +107,11 @@ export class MarketElectricityPanel implements Panel<ElectricitySlice> {
   }
 
   private setCurrent(value: number | null): void {
-    clearElement(this.current);
-    if (value === null || !Number.isFinite(value)) {
-      this.current.textContent = "–";
-      return;
-    }
-    this.current.append(document.createTextNode(formatNumber(value, 2)), createElement("small", undefined, "s/kWh"));
+    const missing = value === null || !Number.isFinite(value);
+    const text = missing ? "–" : formatNumber(value as number, 2);
+    if (this.currentValue.data !== text) this.currentValue.data = text;
+    // Puuduva hinna korral kadus <small> varem koos kogu sisuga; `hidden` annab sama tulemuse.
+    setHidden(this.currentUnit, missing);
   }
 
   private applyStale(data: DashboardData): void {

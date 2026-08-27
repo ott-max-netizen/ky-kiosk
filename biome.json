@@ -14,6 +14,17 @@
     }
   },
   "files": {
-    "includes": ["**", "!dist", "!edge-profile", "!node_modules"]
+    "includes": [
+      "**",
+      "!dist",
+      "!edge-profile",
+      "!node_modules",
+      "!config.js",
+      "!public/config.js",
+      "!test-results",
+      "!playwright-report",
+      "!coverage",
+      "!tests/e2e/snapshots"
+    ]
   }
 }

@@ -76,6 +76,9 @@
   font-weight: 700;
   color: var(--text);
 }
+/* Ilmapaneel hoiab päikeserea alles ka siis, kui andmeid pole; ilma selle
+   reeglita võidaks eksplitsiitne display: flex UA [hidden] reegli üle. */
+.sun-row[hidden] { display: none; }
 .sun-row {
   display: flex;
   justify-content: space-between;

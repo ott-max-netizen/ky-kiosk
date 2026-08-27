@@ -1,7 +1,8 @@
 import type { EmergencyContact } from "../../data/types";
 import { pageItems } from "../../domain/contacts/paging";
-import { clearElement, createElement, requireElement } from "../dom";
-import { appendContactCard } from "./contacts";
+import { createElement, requireElement } from "../dom";
+import { reconcileChildren } from "../reconcile";
+import { createContactCard, patchContactCard } from "./contacts";
 import { updatePageLabel } from "./helpers";
 import type { Panel } from "./panel";
 
@@ -18,6 +19,7 @@ export class EmergencyPanel implements Panel<EmergencySlice> {
   private nextRotationAt = 0;
   private slice: EmergencySlice = { items: [], pageSize: 5, nowMs: 0, rotationMs: 18_000 };
   private mounted = false;
+  private empty: HTMLElement | null = null;
 
   mount(): void {
     if (this.mounted) return;
@@ -44,20 +46,33 @@ export class EmergencyPanel implements Panel<EmergencySlice> {
 
   destroy(): void {
     this.mounted = false;
+    this.empty = null;
   }
 
   private render(): void {
-    clearElement(this.area);
     const result = pageItems(this.slice.items, this.page, this.slice.pageSize);
     this.page = result.page;
     updatePageLabel("emergencyPageLabel", this.slice.items.length, result.pageSize, result.page);
     if (!this.slice.items.length) {
-      this.area.appendChild(createElement("div", "empty", "Kontaktandmed puuduvad."));
+      if (!this.empty) {
+        this.area.replaceChildren();
+        this.empty = createElement("div", "empty", "Kontaktandmed puuduvad.");
+        this.area.appendChild(this.empty);
+      }
       return;
     }
-    for (const item of result.items) {
-      const isPrimaryEmergency = item.phone.replace(/\D/g, "") === "112";
-      appendContactCard(this.area, item.name, item.note, item.phone, true, isPrimaryEmergency);
+    if (this.empty) {
+      this.empty.remove();
+      this.empty = null;
     }
+    reconcileChildren(this.area, result.items, createContactCard, (row, item) =>
+      patchContactCard(row, {
+        primary: item.name,
+        secondary: item.note,
+        phoneText: item.phone,
+        important: true,
+        primaryEmergency: item.phone.replace(/\D/g, "") === "112",
+      }),
+    );
   }
 }

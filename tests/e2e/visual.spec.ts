@@ -101,7 +101,12 @@ test("1200-tähemärgiline teade ja maksimaalsed loendid", async ({ page }) => {
   await routeDemo(page, makeMaxDemoData());
   await page.goto("/?demo=1");
   await waitForReady(page);
-  await expect(page.locator("#noticePageLabel")).toContainText("1/1");
+  // #noticePageLabel täidetakse ainult siis, kui teateid on üle ühe, ja on
+  // muidu `hidden` (.notice-column > .page-label[hidden]). See fixture sisaldab
+  // täpselt ühte teadet, nii et "1/1" ei ole ühelgi kooditeel saavutatav.
+  // Sisuline kontroll on pika teate lehekülgede lugeja (C-14).
+  await expect(page.locator("#noticePageLabel")).toBeHidden();
+  await expect(page.locator(".notice-page-count")).toContainText("lk 1/");
   await expect(page).toHaveScreenshot("max-content.png");
 });
 
