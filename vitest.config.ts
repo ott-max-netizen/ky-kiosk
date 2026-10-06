@@ -9,6 +9,7 @@ export default defineConfig({
     include: ["tests/**/*.spec.ts"],
     // tests/e2e sisaldab Playwrighti teste, mida Vitest ei oska käivitada.
     exclude: ["tests/e2e/**", "node_modules/**", "dist/**"],
+    globalSetup: ["tests/setup/ensure-dist.ts"],
     testTimeout: 10_000,
     hookTimeout: 10_000,
     restoreMocks: true,

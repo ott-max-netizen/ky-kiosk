@@ -1,6 +1,15 @@
 import type { EuriborPoint } from "../../data/types";
 import { formatNumber } from "../dom";
-import { svgElement } from "./svg";
+import { chartFontSize, estimateLabelWidth, patchAttributes, svgElement } from "./svg";
+
+/**
+ * YYYY-MM-DD -> "PP.KK" eesti järjekorras. Varem kuvati `date.slice(5)`, mis andis
+ * "KK.PP" (nt 7. august kui "08.07" ja 26. juuni kui "06.26").
+ */
+export function dayMonthLabel(date: string | undefined): string {
+  const match = /^\d{4}-(\d{2})-(\d{2})/.exec(date ?? "");
+  return match ? `${match[2]}.${match[1]}` : "";
+}
 
 export class EuriborChart {
   private svg: SVGSVGElement | null = null;
@@ -34,7 +43,6 @@ export class EuriborChart {
 
     const width = 220;
     const height = 82;
-    const pad = { top: 5, right: 5, bottom: 14, left: 24 };
     const values = clean.map((point) => point.value);
     let min = Math.min(...values);
     let max = Math.max(...values);
@@ -45,13 +53,31 @@ export class EuriborChart {
     const margin = Math.max(0.02, (max - min) * 0.12);
     min -= margin;
     max += margin;
+    const svg = this.svg;
+    const ticks = [0, 0.5, 1].map((fraction) => max - (max - min) * fraction);
+    const scaleLabels = ticks.map((value) => {
+      const label = svgElement("text", { "text-anchor": "end", class: "market-chart-scale" });
+      label.textContent = formatNumber(value, 1);
+      return label;
+    });
+    svg.append(...scaleLabels);
+    const fontSize = chartFontSize(scaleLabels[0] as Element);
+    const labelWidth = Math.max(
+      ...scaleLabels.map((label) => estimateLabelWidth(label.textContent ?? "", fontSize)),
+    );
+    const pad = {
+      top: Math.ceil(fontSize * 0.4),
+      right: 5,
+      // Alumine veeris mahutab kuupäevasildi ja vahe, et y-telje alumine silt ei kattuks sellega.
+      bottom: Math.ceil(fontSize + 4),
+      left: Math.max(24, Math.ceil(labelWidth + 5)),
+    };
     const x = (index: number) => pad.left + (index / (clean.length - 1)) * (width - pad.left - pad.right);
     const y = (value: number) => pad.top + ((max - value) / (max - min)) * (height - pad.top - pad.bottom);
 
-    for (const fraction of [0, 0.5, 1]) {
-      const value = max - (max - min) * fraction;
+    ticks.forEach((value, index) => {
       const lineY = y(value);
-      this.svg.appendChild(
+      svg.insertBefore(
         svgElement("line", {
           x1: pad.left,
           y1: lineY,
@@ -59,16 +85,11 @@ export class EuriborChart {
           y2: lineY,
           class: "market-grid-line",
         }),
+        svg.firstChild,
       );
-      const label = svgElement("text", {
-        x: pad.left - 3,
-        y: lineY + 2,
-        "text-anchor": "end",
-        class: "market-chart-scale",
-      });
-      label.textContent = formatNumber(value, 1);
-      this.svg.appendChild(label);
-    }
+      const label = scaleLabels[index];
+      if (label) patchAttributes(label, { x: pad.left - 3, y: lineY + fontSize * 0.35 });
+    });
 
     const path = clean
       .map((point, index) => `${index === 0 ? "M" : "L"} ${x(index).toFixed(2)} ${y(point.value).toFixed(2)}`)
@@ -91,14 +112,14 @@ export class EuriborChart {
       "text-anchor": "start",
       class: "market-chart-label",
     });
-    firstLabel.textContent = clean[0]?.date.slice(5).replace("-", ".") ?? "";
+    firstLabel.textContent = dayMonthLabel(clean[0]?.date);
     const lastLabel = svgElement("text", {
       x: width - pad.right,
       y: height - 2,
       "text-anchor": "end",
       class: "market-chart-label",
     });
-    lastLabel.textContent = last?.date.slice(5).replace("-", ".") ?? "";
+    lastLabel.textContent = dayMonthLabel(last?.date);
     this.svg.append(firstLabel, lastLabel);
   }
 

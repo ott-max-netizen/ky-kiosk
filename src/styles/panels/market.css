@@ -51,6 +51,10 @@
 .market-card.is-stale {
   border-style: dashed;
 }
+/* Absoluutselt paigutatud vanusemärk ("2 p vana", "vahemälust") ei tohi katta allikarida. */
+.market-card.is-stale .market-card-source {
+  padding-right: 5.2rem;
+}
 .electricity-card {
   grid-column: 1 / -1;
   border-top: 0.2rem solid var(--market-electric);

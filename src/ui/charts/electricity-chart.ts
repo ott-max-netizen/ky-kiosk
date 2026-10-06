@@ -1,6 +1,6 @@
 import type { ElectricityPoint } from "../../data/types";
 import { formatNumber } from "../dom";
-import { svgElement } from "./svg";
+import { chartFontSize, estimateLabelWidth, patchAttributes, svgElement } from "./svg";
 
 interface CleanPoint {
   time: string;
@@ -68,9 +68,6 @@ export class ElectricityChart {
 
     const width = 320;
     const height = 88;
-    const pad = { top: 5, right: 3, bottom: 14, left: 25 };
-    const plotWidth = width - pad.left - pad.right;
-    const plotHeight = height - pad.top - pad.bottom;
     const values = points.map((point) => point.price);
     let lower = Math.min(0, ...values);
     let upper = Math.max(0, ...values);
@@ -79,13 +76,35 @@ export class ElectricityChart {
       lower -= 1;
     }
     const range = upper - lower;
+
+    // Teljesildid luuakse enne paigutust, et vasak veeris arvutada siltide tegelikust
+    // pikkusest ja fondi suurusest. Fikseeritud 25-ühikuline veeris lõikas "22,3"
+    // esimese numbri ära, sest sildid skaleeruvad koos viewBox'iga.
+    const ticks = [0, 0.25, 0.5, 0.75, 1].map((fraction) => upper - range * fraction);
+    const scaleLabels = ticks.map((tick) => {
+      const label = svgElement("text", { "text-anchor": "end", class: "market-chart-scale" });
+      label.textContent = formatNumber(tick, 1);
+      this.labelGroup?.appendChild(label);
+      return label;
+    });
+    const fontSize = chartFontSize(scaleLabels[0] as Element);
+    const labelWidth = Math.max(
+      ...scaleLabels.map((label) => estimateLabelWidth(label.textContent ?? "", fontSize)),
+    );
+    const pad = {
+      top: Math.ceil(fontSize * 0.4),
+      right: 3,
+      bottom: Math.ceil(fontSize + 2),
+      left: Math.max(25, Math.ceil(labelWidth + 5)),
+    };
+    const plotWidth = width - pad.left - pad.right;
+    const plotHeight = height - pad.top - pad.bottom;
     const y = (value: number) => pad.top + ((upper - value) / range) * plotHeight;
     const zeroY = y(0);
 
-    for (const fraction of [0, 0.25, 0.5, 0.75, 1]) {
-      const tick = upper - range * fraction;
+    ticks.forEach((tick, index) => {
       const lineY = y(tick);
-      this.gridGroup.appendChild(
+      this.gridGroup?.appendChild(
         svgElement("line", {
           x1: pad.left,
           y1: lineY,
@@ -94,15 +113,9 @@ export class ElectricityChart {
           class: Math.abs(tick) < 0.0001 ? "market-zero-line" : "market-grid-line",
         }),
       );
-      const label = svgElement("text", {
-        x: pad.left - 3,
-        y: lineY + 2.2,
-        "text-anchor": "end",
-        class: "market-chart-scale",
-      });
-      label.textContent = formatNumber(tick, 1);
-      this.labelGroup.appendChild(label);
-    }
+      const label = scaleLabels[index];
+      if (label) patchAttributes(label, { x: pad.left - 3, y: lineY + fontSize * 0.35 });
+    });
 
     const slot = plotWidth / points.length;
     const barWidth = Math.max(1.2, slot * 0.72);

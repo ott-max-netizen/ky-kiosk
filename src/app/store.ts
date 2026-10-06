@@ -23,6 +23,23 @@ export interface AppState {
 
 export type StoreListener = (next: AppState, previous: AppState) => void;
 
+const MAX_RUNTIME_PROBLEMS = 20;
+
+/**
+ * Asendab serverivastuse valideerimisprobleemid uutega, kuid säilitab kliendi enda
+ * probleemid (`isLocal`), nt vahemällu kirjutamise tõrke ja prügiveo sageduse hoiatused.
+ * Varem kirjutas edukas sünkroonimine kogu loendi üle ja just lisatud vahemälutõrge
+ * kadus diagnostikast samas tsüklis.
+ */
+export function replaceRemoteProblems(
+  current: readonly string[],
+  remote: readonly string[],
+  isLocal: (problem: string) => boolean,
+): string[] {
+  const local = current.filter(isLocal);
+  return [...new Set([...remote, ...local])].slice(-MAX_RUNTIME_PROBLEMS);
+}
+
 export class AppStore {
   private state: AppState;
   private readonly listeners = new Set<StoreListener>();
@@ -64,7 +81,7 @@ export class AppStore {
   addRuntimeProblem(problem: string): void {
     const current = this.state.status.runtimeProblems;
     if (current.includes(problem)) return;
-    this.patchStatus({ runtimeProblems: [...current, problem].slice(-20) });
+    this.patchStatus({ runtimeProblems: [...current, problem].slice(-MAX_RUNTIME_PROBLEMS) });
   }
 
   clearRuntimeProblem(problem: string): void {

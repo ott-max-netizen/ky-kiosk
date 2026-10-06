@@ -339,8 +339,8 @@ Linuxi teostuskeskkonnas ei olnud Google Apps Scripti runtime'i, Windows PowerSh
 
 ## 8. Jääkriskid
 
-1. **Npm lock-fail puudub.** Esimesel internetiga arendusmasinal tuleb käivitada `npm install`, üle vaadata resolved versioonid ja lisada `package-lock.json`.
-2. **Ametlikud npm kvaliteediväravad on selles keskkonnas käivitamata.** Fallback-kontrollid ja brauseritestid läbisid, kuid need ei asenda Vitesti, oxlinti, Biome'i, Vite'i ega Node Playwrighti.
+1. ~~**Npm lock-fail puudub.**~~ Lahendatud: `package-lock.json` on versioonihalduses.
+2. ~~**Ametlikud npm kvaliteediväravad on selles keskkonnas käivitamata.**~~ Lahendatud: 4.5.0 käivitas Vitesti, oxlinti, Biome'i, Vite'i ja Playwrighti (vt `docs/baseline.md` ja `CHANGELOG.md`).
 3. **Windowsi runtime on testimata.** PowerShelli skriptid on hoitud Windows PowerShell 5.1 süntaksiga, kuid paralleelsus, Scheduled Tasks, registripoliitika ja Edge'i krahhitaaste vajavad päris masinat.
 4. **Apps Scripti jõudlus on mõõtmata.** `fetchAll` ja lukk on rakendatud, kuid külma `doGet` p95 tuleb Google'is mõõta.
 5. **Vana PNG täpne visuaalvärav ei ole läbitud.** Tulevikus kasutatakse determineeritud baseline'e; esmane heakskiit vajab inimese visuaalset ülevaatust.

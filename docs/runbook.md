@@ -44,13 +44,14 @@ npm run measure:check  # 24 h kiirendatud Chromium + DOM/SVG eelarve
 npm run build
 ```
 
-> **4.4.0 seis:** `npm run check` lõpeb seni ainsa teadaoleva release-blokeerijaga preflightis —
-> `tests/e2e/snapshots/build-version.txt` on `4.0.0`, projekt `4.4.0`. Baseline'id
-> pärinevad versioonist 4.0.0 ja näitavad veel vana nelja kuu maja-paneeli, mille
-> 4.1.0 asendas kolme vaatega, seega ei saa need ühegi praeguse buildi vastu läbi
-> minna. Enne release'i tuleb need kioskiga sarnasel masinal käsuga
-> `npm run test:visual:update` uuendada ja silmaga üle vaadata. Kõik ülejäänud 125
-> preflighti kontrolli läbivad.
+> **4.5.0 seis:** `npm run check` lõpeb seni ainsa teadaoleva release-blokeerijaga preflightis —
+> `tests/e2e/snapshots/build-version.txt` on `4.0.0`, projekt `4.5.0`. Baseline'id
+> pärinevad versioonist 4.0.0 ja näitavad veel vana nelja kuu maja-paneeli; 4.5.0 muudab
+> lisaks teadlikult ööteema kontaktikaarte, graafikutelgi ja kuupäevavälju. Enne
+> release'i tuleb need kioskiga sarnasel masinal käsuga `npm run test:visual:update`
+> uuendada ja silmaga üle vaadata. Pikslitest sõltumatu `tests/e2e/layout-audit.spec.ts`
+> (kontrast, lõikumine, SVG sildid, kuupäevad) peab aga juba praegu läbima — selle
+> tõrge on päris viga, mitte baseline'i probleem.
 
 Jõudluse kontrollmõõtmine on release-checklisti osa:
 

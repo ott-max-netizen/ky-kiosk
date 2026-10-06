@@ -1,5 +1,5 @@
 import type { DashboardData, SectionName } from "../../data/types";
-import { getFormatters } from "../../domain/time/formatters";
+import { type AppFormatters, getFormatters } from "../../domain/time/formatters";
 import { parseDateOnly, validDate } from "../../domain/time/zoned";
 import { requireElement, setHidden, setText } from "../dom";
 
@@ -18,9 +18,21 @@ const MONTHS_SHORT = [
   "dets",
 ];
 
+type DateValueKind = "dayMonth" | "dayLongMonth" | "dayOnly" | "weekdayShort" | "time" | "dateTime";
+
+/** Kuupäevaväärtuse (YYYY-MM-DD) vormindaja; kellaajaga liikidel puudub kuupäevast kellaaeg. */
+const UTC_FORMATTER: Record<DateValueKind, keyof AppFormatters | null> = {
+  dayMonth: "utcDayMonth",
+  dayLongMonth: "utcDayLongMonth",
+  dayOnly: "utcDayOnly",
+  weekdayShort: "utcWeekdayShort",
+  time: null,
+  dateTime: null,
+};
+
 export function formatDateValue(
   value: unknown,
-  kind: "dayMonth" | "dayLongMonth" | "dayOnly" | "monthShort" | "weekdayShort" | "time" | "dateTime",
+  kind: DateValueKind | "monthShort",
   timeZone: string,
 ): string {
   const formatters = getFormatters(timeZone);
@@ -34,10 +46,12 @@ export function formatDateValue(
         : "";
   }
   if (only) {
+    // Kuupäev ilma kellaajata vormindatakse UTC keskpäevana, et ajavöönd ei nihutaks päeva.
+    // NB: varem kontrolliti `formatter instanceof Intl.DateTimeFormat`; see kukkus läbi
+    // keskkonnas, kus Intl.DateTimeFormat on asendatud (Playwrighti kell), ja kuupäev jäi tühjaks.
     const date = new Date(Date.UTC(only.year, only.month - 1, only.day, 12));
-    const key = `utc${kind.charAt(0).toUpperCase()}${kind.slice(1)}` as keyof typeof formatters;
-    const formatter = formatters[key];
-    return formatter instanceof Intl.DateTimeFormat ? formatter.format(date) : "";
+    const key = UTC_FORMATTER[kind];
+    return key ? formatters[key].format(date) : "";
   }
   const date = validDate(value);
   return date ? formatters[kind].format(date) : "";
