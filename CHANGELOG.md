@@ -28,6 +28,8 @@ visuaalvõrdlus ei saanud ühegi praeguse buildi vastu läbi minna.
   väljumised), ja suundade pealkirjad ei olnud samal joonel.
 - Prügiveo jäätmeliigi nimi sai kuupäevaveeru arvelt rohkem ruumi
   ("Biolagunevad jäätmed" ei lühene enam).
+- Vananenud andmete vaates puutus elektrikaardi min/keskm/max rida vastu telje
+  kellaaegu; statistikareal on nüüd püsiv vahe.
 
 ### Parandatud – töökindlus
 
