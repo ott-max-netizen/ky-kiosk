@@ -453,6 +453,21 @@ check(
   headerDrain > 0 && headerDrain < server.indexOf('if (path == "/healthz")'),
   "kioskiserver loeb päised enne /healthz vastust",
 );
-check(watchdogSource.includes("Stop-KuEdge"), "watchdog sulgeb enne taaskäivitust KÜ Edge'i protsessid");
+// Windows PowerShell 5.1 loeb BOM-ita UTF-8 skripti Windows-1252-na. Kui mõne märgi
+// UTF-8 baitidest saab 1252-s nutikas jutumärk (nt „–“ → 0x93 “, „→“ → 0x92 ’),
+// käsitleb PowerShell seda stringi piirajana ja skript ei parsi.
+for (const name of readdirSync("kiosk").filter((file) => file.endsWith(".ps1"))) {
+  const bytes = readFileSync(join("kiosk", name));
+  const quoteBytes = [0x82, 0x84, 0x8b, 0x91, 0x92, 0x93, 0x94, 0x9b];
+  check(
+    bytes.subarray(0, 3).equals(Buffer.from([0xef, 0xbb, 0xbf])) ||
+      !bytes.some((byte) => quoteBytes.includes(byte)),
+    `kiosk/${name} on Windows PowerShell 5.1-s jutumärgiohutu`,
+  );
+}
+check(
+  /\n\s+Stop-KuEdge\s*\r?\n\s+Start-Process -FilePath \$startScript/.test(watchdogSource),
+  "watchdog sulgeb enne taaskäivitust KÜ Edge'i protsessid",
+);
 
 console.log(`Preflight: ${assertions} kontrolli läbitud.`);

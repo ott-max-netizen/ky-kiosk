@@ -201,10 +201,14 @@ describe("Apps Script Sources.gs käitumine", () => {
       app.UrlFetchApp.fetchAll.mockImplementationOnce(() => {
         throw new Error("Timeout: https://www.ilmateenistus.ee/ilma_andmed/xml/observations.php");
       });
-      app.UrlFetchApp.fetch.mockReturnValueOnce(forecast);
+      // Ainult Open-Meteo URL tagastab prognoosi; vale URL-i korduspäring kukuks läbi.
+      app.UrlFetchApp.fetch.mockImplementationOnce((url: string) =>
+        url.includes("api.open-meteo.com") ? forecast : response(200, "<observations/>"),
+      );
       const result = app.api.getWeather_(settings, TZ) as { ok: boolean };
       expect(result.ok).toBe(true);
       expect(app.UrlFetchApp.fetch).toHaveBeenCalledTimes(1);
+      expect(app.UrlFetchApp.fetch.mock.calls[0]?.[0]).toContain("api.open-meteo.com");
       expect([...app.store.keys()].some((key) => key.startsWith("weather_observation_fail"))).toBe(true);
     });
   });

@@ -44,14 +44,18 @@ npm run measure:check  # 24 h kiirendatud Chromium + DOM/SVG eelarve
 npm run build
 ```
 
-> **4.5.0 seis:** `npm run check` lõpeb seni ainsa teadaoleva release-blokeerijaga preflightis —
-> `tests/e2e/snapshots/build-version.txt` on `4.0.0`, projekt `4.5.0`. Baseline'id
-> pärinevad versioonist 4.0.0 ja näitavad veel vana nelja kuu maja-paneeli; 4.5.0 muudab
-> lisaks teadlikult ööteema kontaktikaarte, graafikutelgi ja kuupäevavälju. Enne
-> release'i tuleb need kioskiga sarnasel masinal käsuga `npm run test:visual:update`
-> uuendada ja silmaga üle vaadata. Pikslitest sõltumatu `tests/e2e/layout-audit.spec.ts`
-> (kontrast, lõikumine, SVG sildid, kuupäevad) peab aga juba praegu läbima — selle
-> tõrge on päris viga, mitte baseline'i probleem.
+> **4.5.0 seis:** `tests/e2e/snapshots/build-version.txt` on `4.5.0` ja `npm run check`
+> läbib. Kuus PNG-baseline'i on renderdatud Linuxi Chromium 1194-ga (vt
+> `docs/baseline.md`) ning need on arendus- ja CI-keskkonna võrdlusalus. Windowsi/Edge'i
+> masinal erineb teksti rasterdus, seega võivad `npm run test:visual` PNG-võrdlused seal
+> kukkuda ilma päris regressioonita. Seal tee **A/B võrdlus**: genereeri võrdluspildid
+> eelmise release'i koodiga (`git worktree add ../prev <eelmine-tag>`, seal
+> `npx playwright test --update-snapshots`), kopeeri need uue koodi
+> `tests/e2e/snapshots/` kausta ja käivita `npx playwright test`. **Ära genereeri
+> võrdluspilte testitava koodiga**, sest siis läbib võrdlus ka päris regressiooni korral.
+> Ära commit'i Windowsis genereeritud PNG-sid. Pikslitest sõltumatu
+> `tests/e2e/layout-audit.spec.ts` (kontrast, lõikumine, SVG sildid, kuupäevad) peab
+> läbima igas Chromiumis; selle tõrge on päris viga.
 
 Jõudluse kontrollmõõtmine on release-checklisti osa:
 
@@ -74,6 +78,39 @@ robocopy C:\KuInfoekraan C:\KuInfoekraan.prev /MIR /XD edge-profile node_modules
 3. Asenda `dist` ja `kiosk` kaustad. **Ära kirjuta üle juurkausta `config.js` faili.**
 4. Taaskäivita ajastatud ülesanded või käivita `kiosk\start-kiosk.cmd`.
 5. Kontrolli demo-, teatevaba ja debug-vaadet.
+
+### Windowsi kioskiskriptide käsitest (C-30, C-37)
+
+Tee pärast `kiosk/` kausta uuendamist. Linuxis kontrollib `tests/contract/kiosk-server.spec.ts`
+ainult serveri C# koodi (Mono, C# 5, hoiatused = vead); PowerShelli, Edge'i ja Task
+Scheduleri osa saab kontrollida ainult kioskimasinas.
+
+1. **Server kompileerub.** Peata ülesanne „KU Infoekraan Server“ ja käivita käsitsi:
+
+   ```powershell
+   powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:\KuInfoekraan\kiosk\local-server.ps1 -Root C:\KuInfoekraan\dist
+   ```
+
+   Aken peab jääma tööle. Vea `Cannot add type. Compilation errors occurred` korral ära
+   paigalda; taasta eelmine `kiosk` kaust.
+2. **`/healthz` ilma ühenduse lähtestamiseta.** Teises aknas:
+
+   ```powershell
+   curl.exe -sv http://127.0.0.1:8765/healthz
+   1..20 | ForEach-Object { (Invoke-WebRequest -UseBasicParsing http://127.0.0.1:8765/healthz -TimeoutSec 2).Content }
+   ```
+
+   Iga vastus peab olema `200` + `KU-INFOEKRAAN-OK`, ilma `Connection reset` veata.
+3. **Paralleelsed ühendused.** `1..40 | ForEach-Object -Parallel { (Invoke-WebRequest -UseBasicParsing http://127.0.0.1:8765/healthz).StatusCode }`
+   (PowerShell 7) või 40 brauserivahekaarti: kõik vastused `200`, server jääb tööle.
+4. **Watchdog sulgeb Edge'i enne taaskäivitust.** Ava tavaline Edge (oma profiiliga).
+   Peata seejärel serveri ülesanne ja oota kuni 3 minutit. `C:\ProgramData\KuInfoekraan\logs\watchdog.log`
+   peab sisaldama ridu `Taaskäivitan infoekraani. serverOk=False …` ja
+   `Sulgen N KÜ Edge'i protsessi enne taaskäivitust`. Tulemuseks peab olema **täpselt
+   üks** kioskiaken ning tavaline Edge-aken peab jääma avatuks.
+5. **Aegunud heartbeat.** Peata kioski Edge'i renderdaja Task Manageris (või muuda
+   `renderer-heartbeat.txt` üle 210 s vanaks): watchdog peab tegema sama taaskäivituse
+   ja `edge-profile` ei tohi jääda lukku (Edge ei näita profiilivea dialoogi).
 
 ## 4. Igapäevane diagnostika
 

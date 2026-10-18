@@ -227,6 +227,9 @@ describe("kohaliku seinakella aja teisendus", () => {
     ["2026-03-29T02:30:00+02:00", { year: 2026, month: 3, day: 29, hour: 2, minute: 30 }],
     ["2026-03-29T05:00:00+03:00", { year: 2026, month: 3, day: 29, hour: 5, minute: 0 }],
     ["2026-10-25T05:00:00+02:00", { year: 2026, month: 10, day: 25, hour: 5, minute: 0 }],
+    // Kevadine auk (03:00–04:00 puudub) nihkub edasi; sügisene kordustund → hilisem (EET).
+    ["2026-03-29T04:30:00+03:00", { year: 2026, month: 3, day: 29, hour: 3, minute: 30 }],
+    ["2026-10-25T03:30:00+02:00", { year: 2026, month: 10, day: 25, hour: 3, minute: 30 }],
   ])("%s", (expected, parts) => {
     expect(zonedDateTimeToInstant(parts, "Europe/Tallinn").toISOString()).toBe(
       new Date(expected).toISOString(),
@@ -240,5 +243,28 @@ describe("kohaliku seinakella aja teisendus", () => {
     );
     expect(instant.toISOString()).toBe("2026-07-01T13:45:00.000Z");
     expect(zonedParts(instant, "America/New_York")).toMatchObject({ hour: 9, minute: 45 });
+  });
+
+  it("käsitleb DST auku ja kordustundi UTC-st läänes samamoodi kui idas", () => {
+    const ny = (month: number, day: number, hour: number) =>
+      zonedDateTimeToInstant({ year: 2026, month, day, hour, minute: 30 }, "America/New_York").toISOString();
+    // 08.03.2026 kell 02:00 EST → 03:00 EDT: 02:30 puudub ja nihkub edasi 03:30 EDT-le.
+    expect(ny(3, 8, 2)).toBe("2026-03-08T07:30:00.000Z");
+    expect(ny(3, 8, 1)).toBe("2026-03-08T06:30:00.000Z");
+    // 01.11.2026 kell 02:00 EDT → 01:00 EST: 01:30 kordub, valitakse hilisem (EST).
+    expect(ny(11, 1, 1)).toBe("2026-11-01T06:30:00.000Z");
+  });
+
+  it("iga 2026. aasta veerandtunni seinakell teisendub tagasi samaks hetkeks", () => {
+    for (const timeZone of ["Europe/Tallinn", "America/New_York", "Australia/Lord_Howe"]) {
+      let mismatches = 0;
+      for (let instant = Date.UTC(2026, 0, 1); instant < Date.UTC(2027, 0, 1); instant += 900_000) {
+        const local = zonedParts(new Date(instant), timeZone);
+        const back = zonedParts(zonedDateTimeToInstant(local, timeZone), timeZone);
+        if (back.hour !== local.hour || back.minute !== local.minute || back.day !== local.day)
+          mismatches += 1;
+      }
+      expect(mismatches, timeZone).toBe(0);
+    }
   });
 });

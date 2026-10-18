@@ -74,21 +74,24 @@ export function zonedParts(date: Date = new Date(), timeZone = "Europe/Tallinn")
 
 /**
  * Teisendab ajavööndi kohaliku seinakella aja (kuupäev + tund + minut) ajahetkeks.
- * Nihe leitakse kahe sammuga, et ka DST-vahetuse lähedal saadaks õige UTC aeg;
- * kevadise augu sisse jääv olematu kellaaeg nihkub vahetusjärgsesse aega.
+ * Kandidaadid arvutatakse ööpäev varasema ja hilisema UTC-nihkega, nii et DST-vahetus
+ * käitub igas ajavööndis ühtmoodi (sama reegel nagu Temporal API `"later"`):
+ * sügisese kordustunni korral valitakse hilisem hetk ning kevadise augu sisse jääv
+ * olematu kellaaeg nihkub augu pikkuse võrra edasi (Tallinn 03:30 → 04:30,
+ * New York 02:30 → 03:30).
  */
 export function zonedDateTimeToInstant(parts: ZonedParts, timeZone = "Europe/Tallinn"): Date {
   const wall = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second ?? 0);
-  const offsetAt = (instant: number) => {
+  const wallOf = (instant: number) => {
     const local = zonedParts(new Date(instant), timeZone);
-    return (
-      Date.UTC(local.year, local.month - 1, local.day, local.hour, local.minute, local.second ?? 0) -
-      Math.floor(instant / 1000) * 1000
-    );
+    return Date.UTC(local.year, local.month - 1, local.day, local.hour, local.minute, local.second ?? 0);
   };
-  const first = wall - offsetAt(wall);
-  const second = wall - offsetAt(first);
-  return new Date(second);
+  const offsetAt = (instant: number) => wallOf(instant) - Math.floor(instant / 1000) * 1000;
+  const offsetBefore = offsetAt(wall - DAY_MS);
+  const offsetAfter = offsetAt(wall + DAY_MS);
+  const valid = [wall - offsetBefore, wall - offsetAfter].filter((instant) => wallOf(instant) === wall);
+  // Auk: kumbki kandidaat ei anna soovitud kellaaega; vahetuseelne nihe viib edasi.
+  return new Date(valid.length ? Math.max(...valid) : wall - offsetBefore);
 }
 
 export function parseDateOnly(value: unknown): CalendarDate | null {

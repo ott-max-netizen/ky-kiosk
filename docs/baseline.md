@@ -236,9 +236,9 @@ Kontrollitud Linuxi konteineris eelpaigaldatud Chromium 1194-ga (Playwright 1.62
 `PLAYWRIGHT_CHROMIUM_EXECUTABLE=/opt/pw-browsers/chromium`), 1920 × 1080.
 
 - `npm run lint`, `format:check`, `typecheck`, `build`: PASS.
-- `npm test`: 18 faili / 160 testi PASS (oli 15 / 134).
+- `npm test`: 19 faili / 169 testi PASS (oli 15 / 134), ka `TZ=UTC`, `TZ=America/Los_Angeles` ja `TZ=Asia/Tokyo` korral.
 - `npx playwright test`: 11/11 PASS (4 paigutusauditit, 7 visuaaltesti).
-- `npm run preflight`: 145 kontrolli PASS, **ilma** `KU_ALLOW_STALE_VISUAL_BASELINE` erandita.
+- `npm run preflight`: 148 kontrolli PASS, **ilma** `KU_ALLOW_STALE_VISUAL_BASELINE` erandita.
 - `npm run measure:check`: PASS.
 
 ### Visuaalbaseline'id
@@ -260,10 +260,16 @@ Järelparandused ei muutnud ühtki pikslit. Erinevus 4.0.0 piltidest tuleb 4.1.0
 teadlikest muudatustest (kolme vaatega maja paneel, tüpograafia, turukaardid) ja
 fondistackist.
 
-**Fondihoiatus:** pildid on renderdatud selle konteineri fontidega. 4.3.0 auditis
-erines konteineri tekstirasterdus kioskimasinast umbes 9% pikslitest. Kui
-visuaaltesti käivitatakse Windowsi kioskimasinal, tuleb seal enne võrdlust
-käivitada `npm run test:visual:update` ja ekraanipildid silmaga üle vaadata.
+**Poliitika muutus.** 4.3.0–4.4.0 jaotised ütlevad, et PNG-sid ei tohi konteineri fontidega
+üle kirjutada enne kioskiga võrreldavat renderdust. Projekti omanik otsustas 2026-10-18
+teisiti: commit'itud baseline'id on nüüd **Linuxi Chromium 1194 võrdlusalus** arendus- ja
+CI-keskkonnale ning `build-version.txt` on `4.5.0`. Tõendus, et pildid ei peida
+regressiooni, on ülaltoodud A/B võrdlus muutmata koodiga ja käsitsi ülevaatus.
+
+**Fondihoiatus:** 4.3.0 auditis erines konteineri tekstirasterdus kioskimasinast umbes
+9% pikslitest, seega ei sobi need pildid Windowsi/Edge'i võrdluseks. Seal tee A/B
+võrdlus eelmise release'i koodiga genereeritud piltide vastu (`docs/runbook.md` §3).
+Võrdluspilte ei tohi genereerida testitava koodiga.
 
 ### 24 h jõudlus
 
@@ -282,8 +288,36 @@ Kesköine lisauuendus (ilm, maja, kütus, Euribor) ja minutiline turukaardi
 
 ### Endiselt käivitamata
 
-- `kiosk/local-server.ps1` ja `kiosk/watchdog.ps1` muudatusi ei saanud Linuxis
-  käivitada; käsitestid on `docs/runbook.md`-s (`/healthz`, watchdogi taaskäivitus).
+- PowerShelli, Task Scheduleri ja Edge'i osa ei saanud Linuxis käivitada; käsitestid on
+  `docs/runbook.md` jaotises „Windowsi kioskiskriptide käsitest“. Serveri C# kood
+  kompileeriti ja käivitati Monoga (vt allpool).
 - Apps Scripti muudatusi kontrolliti `node:vm`-is Google'i teenuste asendustega
   (`tests/contract/apps-script-sources.spec.ts`), mitte päris Apps Scripti runtime'is.
 - `npm run test:sources` (live välisallikad) jäi käivitamata.
+
+### Kioskiserveri C# kontroll (Mono)
+
+`kiosk/local-server.ps1` C# koodi kompileeriti Mono `mcs -langversion:5 -warn:4
+-warnaserror+` ja Roslyniga (LangVersion 5, `TreatWarningsAsErrors`), mis vastavad
+Windows PowerShell 5.1 `Add-Type` käitumisele (hoiatused = vead):
+
+| Versioon | mcs | Roslyn |
+|---|---|---|
+| 99e557e (enne) | CS4014 → viga | CS4014 → viga |
+| 5c9d1fa | CS4014 → viga | CS4014 → viga |
+| parandatud | 0 hoiatust | 0 hoiatust |
+
+Parandatud server käivitati Mono all (`127.0.0.1`, `dist/`):
+
+| Kontroll | Tulemus |
+|---|---|
+| `/healthz` 20× järjest | 20/20 `KU-INFOEKRAAN-OK`, ühendus ei lähtestunud |
+| 40 paralleelset `/healthz` | 40 × 200 |
+| `/healthz` 10 jõudeoleva ühendusega | enne `SetMinThreads` 3,29 s, pärast 0,02 s |
+| `/healthz` 15 / 16 jõudeoleva ühendusega | 0,03 s / 4,88 s (piirang täis, ootab 5 s lugemisaega) |
+| `POST /heartbeat` | 204, fail kirjutatud |
+| `/../package.json` | 404 |
+
+Mono ei ole .NET Framework 4.x: lõimekogumi ajastus ja soklite RST-käitumine võivad
+Windowsis erineda, seega käsitest (runbook) jääb kohustuslikuks.
+

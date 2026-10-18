@@ -55,6 +55,12 @@ public sealed class KuInfoServer {
     this.configPath = Path.GetFullPath(configPath);
     this.heartbeatPath = Path.GetFullPath(heartbeatPath);
     this.signature = signature;
+    // Iga ühendus hoiab lõime kuni 5 s lugemisaja jooksul. Vaikimisi lisab lõimekogum
+    // üle protsessorite arvu uusi lõimi aeglaselt ja mõni ootav eelühendus viivitas
+    // /healthz vastust üle watchdogi 2 s piiri. Miinimum katab kõik 16 lubatud ühendust.
+    int workers, completion;
+    ThreadPool.GetMinThreads(out workers, out completion);
+    if (workers < 24) ThreadPool.SetMinThreads(24, completion);
   }
 
   private static string EnsureSeparator(string value) {
@@ -70,13 +76,19 @@ public sealed class KuInfoServer {
         TcpClient client;
         try { client = await listener.AcceptTcpClientAsync().ConfigureAwait(false); }
         catch { connectionGate.Release(); throw; }
-        Task.Run(() => {
-          try { Handle(client); }
-          catch { }
-          finally { connectionGate.Release(); }
-        });
+        Dispatch(client);
       }
     } finally { listener.Stop(); }
+  }
+
+  // Eraldi mitte-async meetod: ootamata Task.Run async-meetodis annab hoiatuse CS4014,
+  // mille Windows PowerShell 5.1 Add-Type muudab kompileerimisveaks ja server ei käivitu.
+  private void Dispatch(TcpClient client) {
+    Task.Run(() => {
+      try { Handle(client); }
+      catch { }
+      finally { connectionGate.Release(); }
+    });
   }
 
   private void Handle(TcpClient client) {

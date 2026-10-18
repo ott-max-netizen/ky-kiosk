@@ -54,6 +54,28 @@ describe("demoandmete elektrihindade nihutamine üle DST piiri", () => {
     expect(result.electricity?.points[18]?.time).toBe("2026-08-25T15:00:00.000Z");
   });
 
+  it("kevadisel DST-päeval jääb 23 erinevat tundi ja auguhetk kannab päris 04:00 hinda", () => {
+    vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-03-29T12:00:00+03:00") });
+    const payload = samplePayload();
+    const source = payload.electricity?.points ?? [];
+    const points = normalizeDemoPayload(payload, false).electricity?.points ?? [];
+    const times = points.map((point) => point.time);
+    expect(source).toHaveLength(24);
+    expect(new Set(times).size).toBe(times.length);
+    expect(times).toHaveLength(23);
+    const at04 = points.find((point) => point.time === "2026-03-29T01:00:00.000Z");
+    expect(at04?.price).toBe(source[4]?.price);
+  });
+
+  it("sügisesel DST-päeval jäävad kõik ajatemplid erinevaks", () => {
+    vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-10-25T12:00:00+02:00") });
+    const points = normalizeDemoPayload(samplePayload(), false).electricity?.points ?? [];
+    const times = points.map((point) => point.time);
+    expect(new Set(times).size).toBe(times.length);
+    expect(localHourMinute(times[0] ?? "")).toBe("2026-10-25 0:00");
+    expect(localHourMinute(times.at(-1) ?? "")).toBe("2026-10-25 23:00");
+  });
+
   it("kasutab seadistatud ajavööndit, mitte kõvakodeeritud Europe/Tallinn'i", () => {
     vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-08-25T02:00:00+03:00") });
     const payload = samplePayload();

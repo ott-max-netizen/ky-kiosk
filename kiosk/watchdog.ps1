@@ -46,7 +46,9 @@ function Stop-KuEdge {
   Write-Log "Sulgen $($all.Count) KÜ Edge'i protsessi enne taaskäivitust"
   $all | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
   # Oota, kuni profiililukk vabaneb; muidu avab uus Edge teise akna või keeldub profiilist.
-  Wait-Process -Id ($all | ForEach-Object { $_.ProcessId }) -Timeout 10 -ErrorAction SilentlyContinue
+  # Wait-Process võib visata terminaalse vea, kui protsess lõpetab kontrolli ja ootele
+  # võtmise vahel; -ErrorAction seda ei püüa ja taaskäivitus jääks vahele.
+  try { Wait-Process -Id ($all | ForEach-Object { $_.ProcessId }) -Timeout 10 -ErrorAction SilentlyContinue } catch {}
 }
 function Test-Heartbeat {
   if(-not (Test-Path -LiteralPath $heartbeat)){ return ((Get-Date) - $lastRestart).TotalSeconds -lt $HeartbeatMaxAgeSeconds }

@@ -63,15 +63,50 @@ samad (0,000% erinevust).
   võrdleb `easterSundayParts_`, `isEstonianPublicHoliday_` ja `weatherPhenomenonEt_`
   tulemusi `src/domain/**` funktsioonidega.
 
+### Mitme agendi ülevaatuse järel
+
+Diffi vaatasid sõltumatult üle viis ülevaatajat. Iga leidu üritasid vastuväitjad ümber
+lükata: 10 leidu kinnitati ja 3 lükati ümber (sh `0,000%` pikslivõrdlus, mis kordus
+sõltumatult).
+
+- **Blokeeriv – `local-server.ps1` ei oleks Windowsis kompileerunud.** Ootamata
+  `Task.Run` `async` meetodis annab hoiatuse CS4014, mille Windows PowerShell 5.1
+  `Add-Type` muudab veaks. Viga oli olemas juba 4.x-is. Mono `mcs -langversion:5
+  -warnaserror` ja Roslyn (LangVersion 5) andsid CS4014 nii vana kui uue koodi puhul.
+  Ühenduse käsitlus käivitub nüüd eraldi mitte-async meetodist `Dispatch`.
+  `tests/contract/kiosk-server.spec.ts` kontrollib seda staatiliselt ning Mono
+  olemasolul kompileerib ja käivitab serveri (`/healthz`, `/heartbeat`).
+- **`/healthz` viivitus jõudeolevate ühenduste korral.** Mono all viivitasid 10
+  ootavat ühendust `/healthz` vastust 3,3 s (watchdogi piir 2 s), sest lõimekogum lisab
+  lõimi aeglaselt. `ThreadPool.SetMinThreads(24)` katab kõik 16 lubatud ühendust; kuni
+  15 jõudeoleva ühendusega vastab `/healthz` nüüd 0,03 s jooksul.
+- `zonedDateTimeToInstant` käsitleb DST-vahetust igas ajavööndis ühtmoodi (Temporal
+  `"later"`): auk nihkub edasi ka UTC-st läänes (New York 02:30 → 03:30 EDT) ja
+  kordustunnist valitakse hilisem hetk. Kontrollitud kõigi 2026. aasta veerandtundidega
+  Tallinnas, New Yorgis ja Lord Howe'l (30 min DST).
+- `normalizeDemoPayload` ei tekita DST-päeval kahte sama ajatempliga punkti: kevadel jääb
+  23 tundi ja augu hetk kannab päris 04:00 hinda.
+- `watchdog.ps1`: `Wait-Process` on `try/catch`-is, sest protsessi lõppemise võidujooks
+  võib visata terminaalse vea, mida `-ErrorAction` ei püüa, ja taaskäivitus jääks vahele.
+- Testid tabavad nüüd ka eraldi minutilise `tick`-i (sama päeva 25 h piir), Apps Scripti
+  korduspäringu URL-i ning preflight kontrollib `Stop-KuEdge` **kutset** enne
+  `Start-Process`-i, mitte ainult funktsiooni nime.
+- Dokumentatsioon: runbook'i 4.5.0 seis on ajakohane; uus jaotis „Windowsi
+  kioskiskriptide käsitest“; baseline'i poliitika muutus on kirjas
+  `docs/baseline.md`-s ning Windowsi/Edge'i masinal tehakse A/B võrdlus eelmise
+  release'i piltide vastu, mitte testitava koodiga genereeritud piltide vastu.
+
 ### Testid
 
-- Vitest 18 faili / 160 testi (oli 15 / 134). Uued: `tests/dom/market-stale.spec.ts`,
+- Vitest 19 faili / 169 testi (oli 15 / 134), läbivad ka `TZ=UTC`,
+  `TZ=America/Los_Angeles` ja `TZ=Asia/Tokyo` korral. Uued: `tests/dom/market-stale.spec.ts`,
   `tests/unit/timezone-validation.spec.ts`, `tests/contract/apps-script-sources.spec.ts`
-  (käivitab päris `.gs` koodi vm-is Google'i teenuste asendustega) ja Domain.gs
-  pariteet `tests/unit/domain.spec.ts`-is. Kõik uued regressioonitestid kukuvad
-  eelmise koodiga läbi.
-- Preflight 145 kontrolli (oli 135), sh ühtne aegumismärgis, graafiku ajavöönd,
-  serveri päiste lugemise järjekord ja watchdogi Edge'i sulgemine.
+  (käivitab päris `.gs` koodi vm-is Google'i teenuste asendustega),
+  `tests/contract/kiosk-server.spec.ts` ja Domain.gs pariteet `tests/unit/domain.spec.ts`-is.
+  Kõik uued regressioonitestid kukuvad eelmise koodiga või vastava mutatsiooniga läbi.
+- Preflight 148 kontrolli (oli 135), sh ühtne aegumismärgis, graafiku ajavöönd,
+  serveri päiste lugemise järjekord, watchdogi Edge'i sulgemine ja kioskiskriptide
+  Windows-1252 jutumärgiohutus.
 
 ## 4.5.0 – 2026-10-06
 

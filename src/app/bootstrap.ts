@@ -3,7 +3,7 @@ import { endpointConfigured, tokenConfigured, type RuntimeConfig } from "../conf
 import { readRuntimeConfig } from "../config/runtime-config";
 import { AppsScriptClient, ConfigurationError } from "../data/apps-script-client";
 import { createSectionVersions, mergeIncoming } from "../data/merge";
-import type { IncomingDashboardPayload, SectionName, SectionVersions } from "../data/types";
+import type { ElectricityPoint, IncomingDashboardPayload, SectionName, SectionVersions } from "../data/types";
 import { validateDashboardPayload } from "../data/validate";
 import { errorMessage, logger } from "../diagnostics/logger";
 import {
@@ -72,19 +72,21 @@ export function normalizeDemoPayload(
     // Nihutatakse kalendripäevi, mitte millisekundeid: talveaja (+02:00) näidis
     // suveaja (+03:00) päeva peale nihutatuna peab jääma samale kohalikule
     // kellaajale. Varasem UTC-keskööde vahe nihutas tulbad tunni võrra.
+    // DST-päeval on 23 või 25 tundi: kevadise augu tund langeb kokku järgmisega.
+    // Sama hetke kohta jääb alles hilisem (päris kellaajale vastav) punkt, et graafikul
+    // poleks kahte tulpa ühe tunni kohta.
     const source = parseDateOnly(payload.electricity.date);
     const dayShift = source ? epochDay(todayParts) - epochDay(source) : 0;
-    copy.electricity = {
-      ...payload.electricity,
-      date: today,
-      points: payload.electricity.points.map((point) => {
-        const instant = Date.parse(point.time);
-        if (!Number.isFinite(instant)) return { ...point };
-        const local = zonedParts(new Date(instant), timeZone);
-        const target = { ...local, ...addCalendarDays(local, dayShift) };
-        return { ...point, time: zonedDateTimeToInstant(target, timeZone).toISOString() };
-      }),
-    };
+    const byTime = new Map<string, ElectricityPoint>();
+    for (const point of payload.electricity.points) {
+      const instant = Date.parse(point.time);
+      if (!Number.isFinite(instant)) continue;
+      const local = zonedParts(new Date(instant), timeZone);
+      const target = { ...local, ...addCalendarDays(local, dayShift) };
+      const time = zonedDateTimeToInstant(target, timeZone).toISOString();
+      byTime.set(time, { ...point, time });
+    }
+    copy.electricity = { ...payload.electricity, date: today, points: [...byTime.values()] };
   }
   return copy;
 }

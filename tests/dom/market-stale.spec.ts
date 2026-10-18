@@ -62,7 +62,13 @@ describe("turukaartide aegumismärgis ilma võrgusünkroonimiseta", () => {
     for (const id of ["electricity", "fuel", "euribor"] as const)
       expect(staleState(id)).toEqual({ stale: false, hidden: true, text: "" });
 
-    // 25 h pärast viimast sünkroonimist; võrku pole olnud, view.update'i ei kutsuta.
+    // Kesköö järel, aga alla 24 h: päevavahetuse haru jookseb siin ja kaardid on värsked.
+    vi.setSystemTime(new Date("2026-08-26T00:00:30+03:00"));
+    view.tickTimeSensitive(new Date());
+    for (const id of ["electricity", "fuel", "euribor"] as const) expect(staleState(id).stale).toBe(false);
+
+    // 25 h pärast viimast sünkroonimist samal päeval: ainult minutiharu (`tick`) saab
+    // märgist muuta; võrku pole olnud ja view.update'i ei kutsuta.
     vi.setSystemTime(new Date("2026-08-26T11:00:00+03:00"));
     view.tickTimeSensitive(new Date());
     for (const id of ["electricity", "fuel", "euribor"] as const)
