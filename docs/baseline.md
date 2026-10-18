@@ -229,3 +229,61 @@ Kontrollitud Linuxi konteineris eelpaigaldatud Chromiumiga (Playwright 1.62.1,
 | CSS bundle gzip | — | 6 220 B | — |
 
 PNG-baseline'e ei kirjutatud konteineri fontidega üle (vt 4.4.0 põhjendus).
+
+## 4.5.0 järelparandused (2026-10-18)
+
+Kontrollitud Linuxi konteineris eelpaigaldatud Chromium 1194-ga (Playwright 1.62.1,
+`PLAYWRIGHT_CHROMIUM_EXECUTABLE=/opt/pw-browsers/chromium`), 1920 × 1080.
+
+- `npm run lint`, `format:check`, `typecheck`, `build`: PASS.
+- `npm test`: 18 faili / 160 testi PASS (oli 15 / 134).
+- `npx playwright test`: 11/11 PASS (4 paigutusauditit, 7 visuaaltesti).
+- `npm run preflight`: 145 kontrolli PASS, **ilma** `KU_ALLOW_STALE_VISUAL_BASELINE` erandita.
+- `npm run measure:check`: PASS.
+
+### Visuaalbaseline'id
+
+Kuus PNG-d uuendati käsuga `npm run test:visual:update`; `build-version.txt` on `4.5.0`.
+Enne seda renderdati samad kuus olekut **muutmata 4.5.0 koodiga** (commit `99e557e`)
+samas keskkonnas ja võrreldi uue koodi renderdusega pikslite kaupa:
+
+| PNG | uus kood vs muutmata 4.5.0 | uus vs commit'itud 4.0.0 |
+|---|---:|---:|
+| `demo-with-notices.png` | 0,000% | 33,6% |
+| `demo-without-notices.png` | 0,000% | 38,8% |
+| `demo-night.png` | 0,000% | 30,5% |
+| `cache-only.png` | 0,000% | 33,6% |
+| `stale-banner.png` | 0,000% | 34,5% |
+| `max-content.png` | 0,000% | 38,7% |
+
+Järelparandused ei muutnud ühtki pikslit. Erinevus 4.0.0 piltidest tuleb 4.1.0–4.5.0
+teadlikest muudatustest (kolme vaatega maja paneel, tüpograafia, turukaardid) ja
+fondistackist.
+
+**Fondihoiatus:** pildid on renderdatud selle konteineri fontidega. 4.3.0 auditis
+erines konteineri tekstirasterdus kioskimasinast umbes 9% pikslitest. Kui
+visuaaltesti käivitatakse Windowsi kioskimasinal, tuleb seal enne võrdlust
+käivitada `npm run test:visual:update` ja ekraanipildid silmaga üle vaadata.
+
+### 24 h jõudlus
+
+| Mõõdik | 4.5.0 | järelparandused | Eelarve |
+|---|---:|---:|---:|
+| Loodud HTML-elemente 24 h | 266 | 266 | ≤ 1000 |
+| Loodud SVG-elemente 24 h | 64 | 64 | ≤ 200 |
+| DOM-sõlmi (algus → 24 h) | 399 → 399 | 399 → 399 | stabiilne |
+| Sunnitud reflow'sid 24 h | 24 | 24 | — |
+| `addEventListener` kokku | 23 | 23 | — |
+| JS bundle gzip | 26 910 B | 27 192 B | — |
+| CSS bundle gzip | 6 220 B | 6 221 B | — |
+
+Kesköine lisauuendus (ilm, maja, kütus, Euribor) ja minutiline turukaardi
+`tick` ei loonud 24 h jooksul ühtki lisaelementi.
+
+### Endiselt käivitamata
+
+- `kiosk/local-server.ps1` ja `kiosk/watchdog.ps1` muudatusi ei saanud Linuxis
+  käivitada; käsitestid on `docs/runbook.md`-s (`/healthz`, watchdogi taaskäivitus).
+- Apps Scripti muudatusi kontrolliti `node:vm`-is Google'i teenuste asendustega
+  (`tests/contract/apps-script-sources.spec.ts`), mitte päris Apps Scripti runtime'is.
+- `npm run test:sources` (live välisallikad) jäi käivitamata.
