@@ -24,6 +24,9 @@
   --warning-bg: #f8ead0;
   --danger: #a2554b;
   --danger-soft: #f7e5e1;
+  /* Kontaktiridade pinnad; ööteema defineerib need ümber (night.css). */
+  --contact-surface: rgba(255, 255, 255, 0.48);
+  --contact-important-surface: #fbefeb;
   --market-electric: #a2554b;
   --market-fuel: #14766f;
   --market-rate: #9a8800;

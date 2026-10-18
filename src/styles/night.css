@@ -12,6 +12,8 @@ html[data-theme="night"] {
   --warning-bg: #3d2f13;
   --danger: #ff8f8f;
   --danger-soft: #412326;
+  --contact-surface: rgba(255, 255, 255, 0.05);
+  --contact-important-surface: #2c2124;
   --shadow: none;
   color-scheme: dark;
 }
@@ -113,6 +115,9 @@ html[data-theme="night"] .market-fuel-row {
 }
 html[data-theme="night"] .market-fuel-kind {
   color: #8bd0c7;
+}
+html[data-theme="night"] .market-current {
+  color: #f0a59a;
 }
 html[data-theme="night"] .euribor-current {
   color: #e4d552;

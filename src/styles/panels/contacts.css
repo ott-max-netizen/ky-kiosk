@@ -26,11 +26,11 @@
   border: 0.06rem solid var(--line);
   border-left: 0.18rem solid var(--accent);
   border-radius: 0.48rem;
-  background: rgba(255, 255, 255, 0.48);
+  background: var(--contact-surface);
 }
 .contact-card-important {
   border-left-color: var(--danger);
-  background: #fbefeb;
+  background: var(--contact-important-surface);
 }
 .contact-copy {
   min-width: 0;
@@ -40,12 +40,19 @@
   overflow: hidden;
 }
 .contact-primary {
+  /* Nimi hoiab loomulikku laiust; liiga pikk nimi lüheneb kolmikpunktiga, mitte poolikult. */
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-weight: 800;
   font-size: var(--fs-b);
   line-height: 1;
   white-space: nowrap;
 }
 .contact-secondary {
+  /* Lisainfo saab ainult nimest üle jääva ruumi ja lüheneb esimesena. */
+  flex: 1 1 0;
   min-width: 0;
   margin-top: 0;
   color: var(--muted);

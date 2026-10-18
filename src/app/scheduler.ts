@@ -79,9 +79,10 @@ export class Scheduler {
         task.nextAt = now;
       }
       if (now < task.nextAt) continue;
-      // Säilita faas nii hästi kui võimalik ka siis, kui üks tick hilineb.
-      do task.nextAt += task.intervalMs;
-      while (task.nextAt <= now);
+      // Säilita faas nii hästi kui võimalik ka siis, kui üks tick hilineb. Vahelejäänud
+      // intervallid arvutatakse korraga: kella hüpe aastaid edasi (tühi CMOS-patarei,
+      // seejärel NTP) tegi varem sammhaaval sadu miljoneid tsüklikordusi ja külmutas lehe.
+      task.nextAt += (Math.floor((now - task.nextAt) / task.intervalMs) + 1) * task.intervalMs;
       // Aeglane asünkroonne ülesanne ei tohi iseendaga kattuda ega kuhjuda.
       if (task.running) continue;
       this.invoke(task);

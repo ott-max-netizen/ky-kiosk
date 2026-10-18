@@ -1,8 +1,8 @@
-# KÜ infoekraan 4.4.0
+# KÜ infoekraan 4.5.0
 
 Windowsi ja Microsoft Edge'i kioskirežiimis töötav korteriühistu infoekraan 27-tollisele 1920 × 1080 ekraanile. Kasutajaliides on eesti keeles, ajavöönd on `Europe/Tallinn` ja kogu staatiline rakendus töötab kohalikust veebiserverist ka internetiühenduseta.
 
-Versioon 4.4.0 jätkab 4.3.0 mõõdetud paneeliarhitektuuri: renderdus patchib olemasolevat DOM-i, `Panel<T>` leping sisaldab ka valikulist ajapõhist `tick(now: Date)` elutsüklit ning release-värav sisaldab masinloetavat 24 h jõudluseelarvet. Google Sheetsi skeem, IndexedDB vahemälu, JSONP varuvariant ja Windowsi kioskiskriptid jäävad alles.
+Versioon 4.5.0 parandab päris Chromiumi ekraanipiltidelt leitud loetavusvead (ööteema kontrast, graafikute teljed, kuupäevad) ja lisab pikslitest sõltumatu paigutusauditi. 4.4.0 jätkas 4.3.0 mõõdetud paneeliarhitektuuri: renderdus patchib olemasolevat DOM-i, `Panel<T>` leping sisaldab ka valikulist ajapõhist `tick(now: Date)` elutsüklit ning release-värav sisaldab masinloetavat 24 h jõudluseelarvet. Google Sheetsi skeem, IndexedDB vahemälu, JSONP varuvariant ja Windowsi kioskiskriptid jäävad alles.
 
 ## Põhiomadused
 
@@ -51,6 +51,14 @@ npm run typecheck
 npm run test
 npm run build
 npm run test:visual
+```
+
+`npm run test:visual` sisaldab ka `tests/e2e/layout-audit.spec.ts` auditit (WCAG kontrast,
+poolikuks lõigatud tekst, viewBox'ist väljuvad SVG sildid, tühjad kuupäevaväljad). See ei
+sõltu PNG-baseline'ist ega fontidest ja peab läbima igas Chromiumis; ainult audit:
+
+```bash
+npx playwright test tests/e2e/layout-audit.spec.ts
 ```
 
 `package-lock.json` on versioonihalduses. Reprodutseeritava paigalduse jaoks kasuta tavapäraselt `npm ci`; `npm install` on vajalik ainult sõltuvuste teadlikul uuendamisel.
@@ -103,8 +111,8 @@ window.KU_CONFIG = {
   nightThemeEndHour: 6,
   nightlyReloadHour: 4,
   nightlyReloadMinute: 10,
-  buildVersion: "4.4.0",
-  buildDate: "2026-08-27"
+  buildVersion: "4.5.0",
+  buildDate: "2026-10-06"
 };
 ```
 
@@ -183,7 +191,7 @@ http://127.0.0.1:8765/?demo=1&notices=0
 http://127.0.0.1:8765/?debug=1
 ```
 
-Demorežiimis ei tehta välispäringuid ega reload'e. Visuaalregressioon kasutab fikseeritud kella ja kuut 1920 × 1080 olekut. Commit'itud baseline'e tohib release-tõendina kasutada alles siis, kui nende `build-version.txt` vastab projekti versioonile; 4.4.0 puhul on vana baseline teadlik release-blokeerija kuni `npm run test:visual:update` käivitamiseni kioskiga võrreldaval masinal.
+Demorežiimis ei tehta välispäringuid ega reload'e. Visuaalregressioon kasutab fikseeritud kella ja kuut 1920 × 1080 olekut. Commit'itud baseline'e tohib release-tõendina kasutada alles siis, kui nende `build-version.txt` vastab projekti versioonile; 4.5.0 puhul on vana baseline teadlik release-blokeerija kuni `npm run test:visual:update` käivitamiseni kioskiga võrreldaval masinal.
 
 ## Offline-käitumine
 

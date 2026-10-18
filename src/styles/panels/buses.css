@@ -121,6 +121,11 @@
   white-space: nowrap;
   overflow: visible;
 }
+/* Tühi suhteline aeg (nt homne väljumine) hoiab rea kõrguse, et mõlema suuna kaardid
+   ja pealkirjad püsiksid samal joonel. */
+.bus-relative:empty::before {
+  content: "\00a0";
+}
 .bus-empty {
   grid-column: 1 / -1;
   min-height: 3.2rem;

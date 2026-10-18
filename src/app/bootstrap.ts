@@ -10,9 +10,13 @@ import { applyPixelShift, installInteractionGuards } from "../ui/layout";
 import { AppView } from "../ui/app-view";
 import { retireServiceWorkers, tickMaintenance, tickSupervisor } from "./lifecycle";
 import { Scheduler } from "./scheduler";
-import { AppStore } from "./store";
+import { AppStore, replaceRemoteProblems } from "./store";
 
 const CACHE_WRITE_PROBLEM = "Vahemälu: viimaseid andmeid ei õnnestunud salvestada";
+const WASTE_PROBLEM_PREFIX = "Prügiveo sagedus: ";
+/** Kliendi enda probleemid, mida serverivastuse probleemide loend ei asenda. */
+const isLocalProblem = (problem: string) =>
+  problem === CACHE_WRITE_PROBLEM || problem.startsWith(WASTE_PROBLEM_PREFIX);
 
 interface Params {
   demo: boolean;
@@ -107,10 +111,9 @@ export async function bootstrap(): Promise<void> {
     params.debug,
     () => scheduler.names(),
     (warnings) => {
-      const marker = "Prügiveo sagedus: ";
       const state = store.get();
-      const current = state.status.runtimeProblems.filter((item) => !item.startsWith(marker));
-      const next = [...current, ...warnings.map((warning) => `${marker}${warning}`)].slice(-20);
+      const current = state.status.runtimeProblems.filter((item) => !item.startsWith(WASTE_PROBLEM_PREFIX));
+      const next = [...current, ...warnings.map((warning) => `${WASTE_PROBLEM_PREFIX}${warning}`)].slice(-20);
       if (
         next.length === state.status.runtimeProblems.length &&
         next.every((item, index) => item === state.status.runtimeProblems[index])
@@ -188,7 +191,11 @@ export async function bootstrap(): Promise<void> {
         lastSyncDurationMs: Math.round(performance.now() - start),
         lastError: "",
         retryDelayMs: 30_000,
-        runtimeProblems: loaded.problems,
+        runtimeProblems: replaceRemoteProblems(
+          store.get().status.runtimeProblems,
+          loaded.problems,
+          isLocalProblem,
+        ),
       });
       scheduleRegular();
     } catch (error) {

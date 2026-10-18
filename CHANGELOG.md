@@ -1,5 +1,78 @@
 # Muudatused
 
+## 4.5.0 – 2026-10-06
+
+Ülevaatus päris Chromiumis renderdatud 1920 × 1080 ekraanipiltide põhjal. Kõik allolevad
+vead olid nähtavad, kuid jäid märkamata, sest PNG-baseline on 4.0.0 päritolu ja
+visuaalvõrdlus ei saanud ühegi praeguse buildi vastu läbi minna.
+
+### Parandatud – kasutajale nähtav
+
+- **Ööteemas olid kontaktid ja avariinumbrid loetamatud.** `.contact-card` ja
+  `.contact-card-important` kasutasid kõvakodeeritud heledaid taustu (`rgba(255,255,255,.48)`,
+  `#fbefeb`), mida `night.css` üle ei kirjutanud; hele tekst heledal pinnal andis
+  kontrastiks 1,2–2,5 : 1. Pinnad on nüüd tokenid `--contact-surface` ja
+  `--contact-important-surface`, mille ööteema defineerib ümber. Ka elektri hetkehind
+  (`#a2554b` tumedal) sai ööteemas loetava värvi.
+- **Elektrigraafiku y-telje sildid olid poolikud** ("22,3" kuvati kui ",2,3"). Sildid
+  skaleeruvad koos viewBox'iga, kuid vasak veeris oli fikseeritud 25 ühikut. Veeris
+  arvutatakse nüüd siltide pikkusest ja arvutatud fondi suurusest; sama Euribori
+  graafikul, kus alumine y-silt kattus ka kuupäevasildiga.
+- **Euribori telje kuupäev oli KK.PP järjekorras** (7. august kui "08.07", 26. juuni
+  kui "06.26"). Nüüd PP.KK.
+- **Avariinimi lõigati poolikuks ilma kolmikpunktita** ("Kanalisatsiooni ava|").
+  Nimi lüheneb nüüd kolmikpunktiga ja lisainfo annab ruumi esimesena.
+- **Turukaardi vanusemärk ("2 p vana") kattis allikarida.** Vananenud kaardil
+  reserveeritakse märgile ruum.
+- **Bussikaardid olid eri kõrgusega**, kui väljumisel puudus suhteline aeg (homsed
+  väljumised), ja suundade pealkirjad ei olnud samal joonel.
+- Prügiveo jäätmeliigi nimi sai kuupäevaveeru arvelt rohkem ruumi
+  ("Biolagunevad jäätmed" ei lühene enam).
+- Vananenud andmete vaates puutus elektrikaardi min/keskm/max rida vastu telje
+  kellaaegu; statistikareal on nüüd püsiv vahe.
+
+### Parandatud – töökindlus
+
+- `formatDateValue` kontrollis `formatter instanceof Intl.DateTimeFormat`. Kui
+  `Intl.DateTimeFormat` on asendatud (Playwrighti kell, polüfill), jäid kõik
+  kuupäevaväljad tühjaks: "seisuga ", "Eesti keskmine · ", prognoosi nädalapäevad,
+  prügiveo kuupäevad. Tootmis-Edge'is viga ei avaldunud, kuid kõik visuaaltestid
+  renderdasid vale ekraani. Vormindaja valitakse nüüd tüübikindla tabeliga.
+- Edukas sünkroonimine kirjutas `runtimeProblems` serveri probleemidega üle: samas
+  tsüklis lisatud „Vahemälu: viimaseid andmeid ei õnnestunud salvestada“ ja prügiveo
+  sageduse hoiatused kadusid kohe diagnostikast. Kliendi enda probleemid säilivad
+  nüüd (`replaceRemoteProblems`).
+- `Scheduler` arvutab vahelejäänud intervallid ühe sammuga. Kella hüpe aastaid edasi
+  (tühi CMOS-patarei, seejärel NTP) tegi varem sammhaaval sadu miljoneid kordusi ja
+  külmutas lehe mitmeks sekundiks (mõõdetud 2,5 s ühe 1 s ülesande kohta).
+
+### Kvaliteediväravad
+
+- Uus `tests/e2e/layout-audit.spec.ts`: pikslitest sõltumatu audit päeva-, öö-,
+  maksimaalse sisu ja vananenud andmete vaates — WCAG kontrast (4,5 / 3 : 1, ka
+  gradienttaustadel), ilma kolmikpunktita lõigatud tekst, viewBox'ist väljuvad SVG
+  sildid ja tühjad kuupäevaväljad. Tõendatud, et audit kukub 4.4.0 koodi vastu läbi
+  kõigi ülalnimetatud vigadega ja läbib 4.5.0 koodiga. Erinevalt PNG-baseline'ist
+  töötab see igas Chromiumis.
+- `npm test` ja `npm run check` töötavad puhtas checkout'is: build-lepingu testid
+  lugesid `dist/` kausta, mida veel polnud (`check` jooksutas testid enne buildi).
+  `check` ehitab nüüd enne teste ja Vitesti `globalSetup` loob puuduva buildi.
+- E2E abifunktsioonid koliti `tests/e2e/helpers.ts` faili.
+- 6 uut regressioonitesti (`tests/unit/review-4-5.spec.ts`); iga test kukub vana koodiga läbi.
+
+### Jõudlus
+
+`npm run measure:check` (24 h kiirendatud Chromium): loodud 266 HTML- / 64 SVG-elementi,
+DOM 399 → 399 — identne 4.4.0-ga. Graafikute veerise arvutus kasutab olemasolevaid
+silte ega loo lisaelemente.
+
+### Teadlikult lahendamata
+
+- PNG-baseline'id on endiselt 4.0.0 päritolu ja 4.5.0 muudab piksleid teadlikult
+  (ööteema, graafikuteljed, kuupäevad). Neid ei genereeritud Linuxi konteineri
+  fontidega; release vajab kioskiga võrreldaval masinal `npm run test:visual:update`
+  käivitamist ja visuaalset ülevaatust.
+
 ## 4.4.0 – 2026-08-27
 
 ### Arhitektuuri ja release-värava tugevdamine

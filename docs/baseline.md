@@ -205,3 +205,27 @@ Commit'itud PNG-baseline'id jäävad teadlikult versioonile 4.0.0. Neid ei nimet
 4.4.0 baseline'iks enne, kui `npm run test:visual:update` on käivitatud
 kioskiga võrreldava fontide, Edge/Chromiumi ja 1920×1080 renderdusega masinal ning
 kuus pilti on visuaalselt üle vaadatud.
+
+## 4.5.0 kontroll
+
+Kontrollitud Linuxi konteineris eelpaigaldatud Chromiumiga (Playwright 1.62.1,
+`PLAYWRIGHT_CHROMIUM_EXECUTABLE`), 1920 × 1080.
+
+- `npm run lint`, `format:check`, `typecheck`: PASS.
+- `npm test`: 15 faili / 134 testi PASS, ka puhtast checkout'ist (ilma `dist/` kaustata).
+- `tests/e2e/layout-audit.spec.ts`: 4/4 PASS. Sama audit 4.4.0 lähtekoodi vastu:
+  4/4 FAIL — ööteemas 27 kontrastiviga (1,23–2,46 : 1), 5–9 viewBox'ist väljuvat
+  y-telje silti, tühjad kuupäevaväljad.
+- `tests/e2e/visual.spec.ts`: 6 PNG-võrdlust FAIL (baseline 4.0.0, oodatud), 1 PASS.
+- `npm run measure:check`: PASS.
+
+| Mõõdik | 4.4.0 | 4.5.0 | Eelarve |
+|---|---:|---:|---:|
+| Loodud HTML-elemente 24 h | 266 | 266 | ≤ 1000 |
+| Loodud SVG-elemente 24 h | 64 | 64 | ≤ 200 |
+| DOM-sõlmi (algus → 24 h) | 399 → 399 | 399 → 399 | stabiilne |
+| Sunnitud reflow'sid 24 h | 24 | 24 | — |
+| JS bundle gzip | — | 26 910 B | — |
+| CSS bundle gzip | — | 6 220 B | — |
+
+PNG-baseline'e ei kirjutatud konteineri fontidega üle (vt 4.4.0 põhjendus).
