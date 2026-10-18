@@ -95,10 +95,21 @@ sõltumatult).
   kioskiskriptide käsitest“; baseline'i poliitika muutus on kirjas
   `docs/baseline.md`-s ning Windowsi/Edge'i masinal tehakse A/B võrdlus eelmise
   release'i piltide vastu, mitte testitava koodiga genereeritud piltide vastu.
+- Parandusi vaadati teises voorus uuesti üle: 10 väikest leidu kinnitati ja 3 lükati
+  ümber, koodivigu ei leitud. Parandatud:
+  - Runbook'i käsitest peatab enne käsitsi käivitatud serverit ka watchdogi ja
+    käivitab ülesanded õiges järjekorras uuesti.
+  - Paralleeltest kasutab `curl.exe --parallel-max 40`, mitte PowerShell 7
+    vaikimisi 5 lõime.
+  - Heartbeat'i test lõpetab renderdajaprotsessid, mitte ei muuda faili aega.
+  - A/B protseduur nimetab konkreetse commit'i ja sisaldab `npm ci` sammu.
+  - `tests/contract/kiosk-server.spec.ts` kontrollib, et server ei vasta enne päiste
+    lõppu (tabab päiste lugemise järjekorra taandumist). Testil on vaba port,
+    2 s ajapiirang ja `mono` lõpetatakse igal juhul.
 
 ### Testid
 
-- Vitest 19 faili / 169 testi (oli 15 / 134), läbivad ka `TZ=UTC`,
+- Vitest 19 faili / 171 testi (oli 15 / 134), läbivad ka `TZ=UTC`,
   `TZ=America/Los_Angeles` ja `TZ=Asia/Tokyo` korral. Uued: `tests/dom/market-stale.spec.ts`,
   `tests/unit/timezone-validation.spec.ts`, `tests/contract/apps-script-sources.spec.ts`
   (käivitab päris `.gs` koodi vm-is Google'i teenuste asendustega),

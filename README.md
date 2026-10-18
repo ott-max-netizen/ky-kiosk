@@ -237,7 +237,7 @@ Koodiga kaasas oleva Kauge peatuse sõiduplaani ametlikul allikal on algus `28.0
 
 ## Visuaalbaseline'i uuendamine
 
-Tüpograafia 4.2.0 muudab piksleid teadlikult. Genereeri 1920 × 1080 baseline'id päris Chromium/Edge keskkonnas käsuga:
+Commit'itud 1920 × 1080 baseline'id genereeritakse Linuxi Chromium 1194 võrdluskeskkonnas (vt `docs/baseline.md`) käsuga:
 
 ```bash
 npm run test:visual:update
@@ -245,4 +245,4 @@ npm run test:visual:update
 
 Käsk uuendab Playwrighti kuus PNG-baseline'i, kirjutab `tests/e2e/snapshots/build-version.txt` väärtuseks praeguse `package.json` versiooni ning loob juurkausta kaks demonstratsioonipilti (neid ei commit'ita). Tavaline preflight kukub läbi, kui baseline'i versioon ja paketi versioon ei ühti; see väldib vanade piltide esitlust uue release'i tõendusena.
 
-Uuenda baseline'e ainult siis, kui renderdus muutub teadlikult, ja tõenda enne, et muutus on ainult see: renderda samad olekud eelmise commit'iga samas keskkonnas, võrdle uue koodiga (A/B) ja vaata pildid silmaga üle. Commit'itud pildid on tehtud Linuxi Chromium 1194-ga; teise fondistackiga masinas genereeritud pilte ei commit'ita.
+Uuenda baseline'e ainult siis, kui renderdus muutub teadlikult, ja tõenda enne, et muutus on ainult see: renderda samad olekud eelmise commit'iga samas keskkonnas, võrdle uue koodiga (A/B) ja vaata pildid silmaga üle. Commit'itud pildid on tehtud Linuxi Chromium 1194-ga; teise fondistackiga masinas (nt Windows/Edge) genereeritud pilte ei commit'ita ning seal tehakse A/B võrdlus `docs/runbook.md` §3 järgi.

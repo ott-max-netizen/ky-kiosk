@@ -236,7 +236,7 @@ Kontrollitud Linuxi konteineris eelpaigaldatud Chromium 1194-ga (Playwright 1.62
 `PLAYWRIGHT_CHROMIUM_EXECUTABLE=/opt/pw-browsers/chromium`), 1920 × 1080.
 
 - `npm run lint`, `format:check`, `typecheck`, `build`: PASS.
-- `npm test`: 19 faili / 169 testi PASS (oli 15 / 134), ka `TZ=UTC`, `TZ=America/Los_Angeles` ja `TZ=Asia/Tokyo` korral.
+- `npm test`: 19 faili / 171 testi PASS (oli 15 / 134), ka `TZ=UTC`, `TZ=America/Los_Angeles` ja `TZ=Asia/Tokyo` korral.
 - `npx playwright test`: 11/11 PASS (4 paigutusauditit, 7 visuaaltesti).
 - `npm run preflight`: 148 kontrolli PASS, **ilma** `KU_ALLOW_STALE_VISUAL_BASELINE` erandita.
 - `npm run measure:check`: PASS.

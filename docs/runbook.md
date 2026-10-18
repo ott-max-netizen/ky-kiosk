@@ -49,9 +49,19 @@ npm run build
 > `docs/baseline.md`) ning need on arendus- ja CI-keskkonna võrdlusalus. Windowsi/Edge'i
 > masinal erineb teksti rasterdus, seega võivad `npm run test:visual` PNG-võrdlused seal
 > kukkuda ilma päris regressioonita. Seal tee **A/B võrdlus**: genereeri võrdluspildid
-> eelmise release'i koodiga (`git worktree add ../prev <eelmine-tag>`, seal
-> `npx playwright test --update-snapshots`), kopeeri need uue koodi
-> `tests/e2e/snapshots/` kausta ja käivita `npx playwright test`. **Ära genereeri
+> eelmise release'i koodiga ja võrdle uut koodi nende vastu. Repos pole release-tag'e,
+> seega kasuta eelmise release'i commit'i `main`-is (4.5.0 järelparanduste võrdlusalus
+> on `99e557e`):
+>
+> ```powershell
+> git worktree add ..\prev 99e557e
+> cd ..\prev; npm ci; npx playwright test --update-snapshots
+> Copy-Item ..\prev\tests\e2e\snapshots\*.png <uus-checkout>\tests\e2e\snapshots\
+> cd <uus-checkout>; npx playwright test
+> ```
+>
+> Teadlikud renderdusmuudatused ilmuvad erinevustena ja need tuleb silmaga üle vaadata.
+> Lõpuks taasta commit'itud pildid (`git checkout -- tests/e2e/snapshots`). **Ära genereeri
 > võrdluspilte testitava koodiga**, sest siis läbib võrdlus ka päris regressiooni korral.
 > Ära commit'i Windowsis genereeritud PNG-sid. Pikslitest sõltumatu
 > `tests/e2e/layout-audit.spec.ts` (kontrast, lõikumine, SVG sildid, kuupäevad) peab
@@ -85,15 +95,22 @@ Tee pärast `kiosk/` kausta uuendamist. Linuxis kontrollib `tests/contract/kiosk
 ainult serveri C# koodi (Mono, C# 5, hoiatused = vead); PowerShelli, Edge'i ja Task
 Scheduleri osa saab kontrollida ainult kioskimasinas.
 
-1. **Server kompileerub.** Peata ülesanne „KU Infoekraan Server“ ja käivita käsitsi:
+Sammud 1–3 tehakse käsitsi käivitatud serveriga, seega peata enne mõlemad ülesanded.
+Muidu käivitab watchdog 30 s jooksul oma serveri ja käsitsi käivitatud server lõpetab
+vaikselt (`exit 0`, sest port 8765 on juba KÜ serveri käes).
+
+1. **Server kompileerub.** Administraatori PowerShellis:
 
    ```powershell
+   Stop-ScheduledTask -TaskName 'KU Infoekraan Watchdog'
+   Stop-ScheduledTask -TaskName 'KU Infoekraan Server'
    powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:\KuInfoekraan\kiosk\local-server.ps1 -Root C:\KuInfoekraan\dist
    ```
 
    Aken peab jääma tööle. Vea `Cannot add type. Compilation errors occurred` korral ära
-   paigalda; taasta eelmine `kiosk` kaust.
-2. **`/healthz` ilma ühenduse lähtestamiseta.** Teises aknas:
+   paigalda; taasta eelmine `kiosk` kaust. Kui aken sulgub kohe ilma veata, vastab
+   pordil 8765 juba teine KÜ server: kontrolli, et mõlemad ülesanded on peatatud.
+2. **`/healthz` ilma ühenduse lähtestamiseta.** Teises PowerShelli aknas:
 
    ```powershell
    curl.exe -sv http://127.0.0.1:8765/healthz
@@ -101,16 +118,41 @@ Scheduleri osa saab kontrollida ainult kioskimasinas.
    ```
 
    Iga vastus peab olema `200` + `KU-INFOEKRAAN-OK`, ilma `Connection reset` veata.
-3. **Paralleelsed ühendused.** `1..40 | ForEach-Object -Parallel { (Invoke-WebRequest -UseBasicParsing http://127.0.0.1:8765/healthz).StatusCode }`
-   (PowerShell 7) või 40 brauserivahekaarti: kõik vastused `200`, server jääb tööle.
-4. **Watchdog sulgeb Edge'i enne taaskäivitust.** Ava tavaline Edge (oma profiiliga).
-   Peata seejärel serveri ülesanne ja oota kuni 3 minutit. `C:\ProgramData\KuInfoekraan\logs\watchdog.log`
-   peab sisaldama ridu `Taaskäivitan infoekraani. serverOk=False …` ja
-   `Sulgen N KÜ Edge'i protsessi enne taaskäivitust`. Tulemuseks peab olema **täpselt
-   üks** kioskiaken ning tavaline Edge-aken peab jääma avatuks.
-5. **Aegunud heartbeat.** Peata kioski Edge'i renderdaja Task Manageris (või muuda
-   `renderer-heartbeat.txt` üle 210 s vanaks): watchdog peab tegema sama taaskäivituse
-   ja `edge-profile` ei tohi jääda lukku (Edge ei näita profiilivea dialoogi).
+3. **Paralleelsed ühendused.** `curl.exe` 7.66+ (`curl.exe --version`) avab 40 ühendust
+   korraga:
+
+   ```powershell
+   curl.exe -s --parallel --parallel-immediate --parallel-max 40 -o NUL -w "%{http_code}\n" "http://127.0.0.1:8765/healthz?[1-40]"
+   ```
+
+   Kõik 40 vastust peavad olema `200` ja serveri aken peab jääma tööle. Seejärel
+   sulge käsitsi käivitatud server (Ctrl+C) ja käivita ülesanded uuesti:
+
+   ```powershell
+   Start-ScheduledTask -TaskName 'KU Infoekraan Server'
+   Start-ScheduledTask -TaskName 'KU Infoekraan Watchdog'
+   ```
+
+4. **Watchdog sulgeb Edge'i enne taaskäivitust.** Oota pärast watchdogi käivitamist
+   vähemalt 2 minutit (taaskäivituste vaheline ooteaeg). Ava tavaline Edge oma
+   profiiliga, seejärel `Stop-ScheduledTask -TaskName 'KU Infoekraan Server'` ja oota kuni
+   1 minut. `C:\ProgramData\KuInfoekraan\logs\watchdog.log` peab sisaldama read
+   `… serverOk=False …` ja `Sulgen N KÜ Edge'i protsessi enne taaskäivitust` (BOM-ita
+   UTF-8 skripti tõttu võivad täpitähed logis moonduda). Tulemuseks peab olema **täpselt
+   üks** kioskiaken, server vastab taas `/healthz`-ile ja tavaline Edge-aken jääb avatuks.
+5. **Aegunud heartbeat.** Oota jälle 2 minutit ja lõpeta kioski renderdajaprotsessid
+   (Edge jääb tööle, kuid leht ei saada enam heartbeat'i):
+
+   ```powershell
+   Get-CimInstance Win32_Process -Filter "Name='msedge.exe'" |
+     Where-Object { $_.CommandLine -match 'KuInfoekraan\\edge-profile' -and $_.CommandLine -match '--type=renderer' } |
+     ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
+   ```
+
+   Kuni ~4 minuti pärast (210 s heartbeat'i piir + 30 s kontrollivahemik) peab logis olema
+   `… heartbeatOk=False` koos Edge'i sulgemisreaga ja ekraanile peab tulema üks uus
+   kioskiaken, ilma profiilivea dialoogita. `renderer-heartbeat.txt` aja käsitsi muutmine
+   ei sobi testiks: töötav leht kirjutab faili iga 30 s järel üle.
 
 ## 4. Igapäevane diagnostika
 
