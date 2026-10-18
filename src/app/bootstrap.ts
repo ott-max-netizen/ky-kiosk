@@ -6,6 +6,15 @@ import { createSectionVersions, mergeIncoming } from "../data/merge";
 import type { IncomingDashboardPayload, SectionName, SectionVersions } from "../data/types";
 import { validateDashboardPayload } from "../data/validate";
 import { errorMessage, logger } from "../diagnostics/logger";
+import {
+  addCalendarDays,
+  epochDay,
+  parseDateOnly,
+  safeTimeZone,
+  ymdKey,
+  zonedDateTimeToInstant,
+  zonedParts,
+} from "../domain/time/zoned";
 import { applyPixelShift, installInteractionGuards } from "../ui/layout";
 import { AppView } from "../ui/app-view";
 import { retireServiceWorkers, tickMaintenance, tickSupervisor } from "./lifecycle";
@@ -39,18 +48,16 @@ function allVersions(value = 1): SectionVersions {
   return result;
 }
 
-function normalizeDemoPayload(
+export function normalizeDemoPayload(
   payload: IncomingDashboardPayload,
   noNotices: boolean,
 ): IncomingDashboardPayload {
   const now = new Date();
   const nowIso = now.toISOString();
-  const today = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Europe/Tallinn",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(now);
+  // Demoandmete seadistatud ajavöönd jääb kehtima; vaikimisi Europe/Tallinn.
+  const timeZone = safeTimeZone(payload.settings?.timeZone || "Europe/Tallinn");
+  const todayParts = zonedParts(now, timeZone);
+  const today = ymdKey(todayParts);
   const copy: IncomingDashboardPayload = {
     ...payload,
     updatedAt: nowIso,
@@ -62,17 +69,21 @@ function normalizeDemoPayload(
   for (const name of Object.keys(copy.sections) as SectionName[])
     copy.sections[name] = { ...copy.sections[name], ok: true, updatedAt: nowIso };
   if (payload.electricity) {
-    const sourceDate = payload.electricity.date;
-    const sourceMidnight = Date.parse(`${sourceDate}T00:00:00Z`);
-    const todayMidnight = Date.parse(`${today}T00:00:00Z`);
-    const shift = Number.isFinite(sourceMidnight) ? todayMidnight - sourceMidnight : 0;
+    // Nihutatakse kalendripäevi, mitte millisekundeid: talveaja (+02:00) näidis
+    // suveaja (+03:00) päeva peale nihutatuna peab jääma samale kohalikule
+    // kellaajale. Varasem UTC-keskööde vahe nihutas tulbad tunni võrra.
+    const source = parseDateOnly(payload.electricity.date);
+    const dayShift = source ? epochDay(todayParts) - epochDay(source) : 0;
     copy.electricity = {
       ...payload.electricity,
       date: today,
-      points: payload.electricity.points.map((point) => ({
-        ...point,
-        time: new Date(Date.parse(point.time) + shift).toISOString(),
-      })),
+      points: payload.electricity.points.map((point) => {
+        const instant = Date.parse(point.time);
+        if (!Number.isFinite(instant)) return { ...point };
+        const local = zonedParts(new Date(instant), timeZone);
+        const target = { ...local, ...addCalendarDays(local, dayShift) };
+        return { ...point, time: zonedDateTimeToInstant(target, timeZone).toISOString() };
+      }),
     };
   }
   return copy;

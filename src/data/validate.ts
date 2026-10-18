@@ -297,9 +297,13 @@ function validateElectricity(value: unknown, problems: string[]): ElectricityDat
   const zone = clampText(value.zone, 20);
   if (zone) result.zone = zone;
   if (typeof value.includesVat === "boolean") result.includesVat = value.includesVat;
+  // Koondväljad läbivad sama usutavuskontrolli kui hinnapunktid; ×100 nihkes
+  // koondväärtus jäetakse välja, mitte ei kuvata tõepärase numbrina.
   for (const key of ["currentPrice", "min", "average", "max"] as const) {
     const number = nullableFinite(value[key]);
-    if (number !== null) result[key] = number;
+    if (number === null) continue;
+    if (inRange(number, PLAUSIBLE.electricityCentsPerKwh)) result[key] = number;
+    else problems.push(`Elektrihinna ${key} on väljaspool usutavat vahemikku: ${number}`);
   }
   if (value.currentTariffType === "day" || value.currentTariffType === "night")
     result.currentTariffType = value.currentTariffType;

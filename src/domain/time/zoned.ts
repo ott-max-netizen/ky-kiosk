@@ -72,6 +72,25 @@ export function zonedParts(date: Date = new Date(), timeZone = "Europe/Tallinn")
   };
 }
 
+/**
+ * Teisendab ajavööndi kohaliku seinakella aja (kuupäev + tund + minut) ajahetkeks.
+ * Nihe leitakse kahe sammuga, et ka DST-vahetuse lähedal saadaks õige UTC aeg;
+ * kevadise augu sisse jääv olematu kellaaeg nihkub vahetusjärgsesse aega.
+ */
+export function zonedDateTimeToInstant(parts: ZonedParts, timeZone = "Europe/Tallinn"): Date {
+  const wall = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second ?? 0);
+  const offsetAt = (instant: number) => {
+    const local = zonedParts(new Date(instant), timeZone);
+    return (
+      Date.UTC(local.year, local.month - 1, local.day, local.hour, local.minute, local.second ?? 0) -
+      Math.floor(instant / 1000) * 1000
+    );
+  };
+  const first = wall - offsetAt(wall);
+  const second = wall - offsetAt(first);
+  return new Date(second);
+}
+
 export function parseDateOnly(value: unknown): CalendarDate | null {
   const match = String(value ?? "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (!match) return null;

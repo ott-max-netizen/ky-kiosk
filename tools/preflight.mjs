@@ -237,7 +237,12 @@ function walkDist(directory) {
       distContent.push(readFileSync(path, "utf8"));
   }
 }
+// Puuduva `dist/` korral kukkus readdirSync varem erindiga, aga tühja kausta korral
+// läbis tsükkel vaikselt 0 failiga ja URL-i/tokeni kontrollid "läbisid" tühjal sisul.
+check(existsSync("dist") && statSync("dist").isDirectory(), "dist/ kaust on olemas (käivita npm run build)");
+check(existsSync("dist/index.html"), "dist/index.html on olemas");
 walkDist("dist");
+check(distContent.length >= 1, "dist/ sisaldab vähemalt ühte kontrollitavat faili");
 const built = distContent.join("\n");
 check(!/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]{20,}/.test(built), "Apps Scripti URL ei ole buildis");
 check(!/[A-Fa-f0-9]{64}/.test(built), "feedToken ei ole buildis");
@@ -424,5 +429,30 @@ check(
   sourcesGs.includes("storeApiFailure_") && sourcesGs.includes("negativeCacheSeconds"),
   "turuallikatel on negatiivne vahemälu",
 );
+const weatherGs = sourcesGs.slice(sourcesGs.indexOf("function getWeather_("));
+check(
+  /UrlFetchApp\.fetchAll\(/.test(weatherGs.slice(0, weatherGs.indexOf("\nfunction ", 1))) &&
+    weatherGs.includes("hasRecentApiFailure_"),
+  "ilmaallikad päritakse paralleelselt ja negatiivse vahemäluga",
+);
+
+// 4.5.0 järelparandused: aegumismärgis kella järgi, ajavöönd graafikus, kioskiserver.
+for (const panel of ["market-electricity", "market-euribor", "market-fuel"]) {
+  const panelSource = readFileSync(`src/ui/panels/${panel}.ts`, "utf8");
+  check(
+    panelSource.includes("updateMarketCardStale(") && !panelSource.includes("Date.now()"),
+    `${panel} kasutab ühist kellapõhist aegumismärgist`,
+  );
+}
+check(
+  !readFileSync("src/ui/charts/electricity-chart.ts", "utf8").includes('timeZone: "Europe/Tallinn"'),
+  "elektrigraafiku ajatelg kasutab seadistatud ajavööndit",
+);
+const headerDrain = server.indexOf("while (!String.IsNullOrEmpty(reader.ReadLine()))");
+check(
+  headerDrain > 0 && headerDrain < server.indexOf('if (path == "/healthz")'),
+  "kioskiserver loeb päised enne /healthz vastust",
+);
+check(watchdogSource.includes("Stop-KuEdge"), "watchdog sulgeb enne taaskäivitust KÜ Edge'i protsessid");
 
 console.log(`Preflight: ${assertions} kontrolli läbitud.`);

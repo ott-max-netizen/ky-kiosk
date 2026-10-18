@@ -35,13 +35,21 @@ export function setClass(element: HTMLElement, className: string, enabled: boole
   if (element.classList.contains(className) !== enabled) element.classList.toggle(className, enabled);
 }
 
+const NUMBER_FORMATTERS = new Map<number, Intl.NumberFormat>();
+
 export function formatNumber(value: unknown, digits = 1): string {
   const number = Number(value);
   if (!Number.isFinite(number)) return "–";
-  return new Intl.NumberFormat("et-EE", {
-    minimumFractionDigits: digits,
-    maximumFractionDigits: digits,
-  }).format(number);
+  // Vormindaja loomine on kallis ja seda kutsutakse iga minut kümneid kordi.
+  let formatter = NUMBER_FORMATTERS.get(digits);
+  if (!formatter) {
+    formatter = new Intl.NumberFormat("et-EE", {
+      minimumFractionDigits: digits,
+      maximumFractionDigits: digits,
+    });
+    NUMBER_FORMATTERS.set(digits, formatter);
+  }
+  return formatter.format(number);
 }
 
 export function clearElement(element: HTMLElement): void {

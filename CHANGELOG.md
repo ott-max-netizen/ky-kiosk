@@ -1,5 +1,78 @@
 # Muudatused
 
+## 4.5.0 järelparandused – 2026-10-18
+
+Versioon jääb 4.5.0-ks. Renderdus ei muutunud: kuus 1920 × 1080 olekut renderdati
+muutmata 4.5.0 koodiga ja uue koodiga samas keskkonnas ning need olid pikslitäpselt
+samad (0,000% erinevust).
+
+### P0 – release-värav
+
+- **Visuaalbaseline'id on nüüd 4.5.0 omad.** `npm run test:visual:update` uuendas kuus
+  PNG-d (kolme vaatega maja paneel, ühtlustatud turukaardid) ja `build-version.txt`
+  on `4.5.0`. `npm run preflight` läbib esimest korda ilma
+  `KU_ALLOW_STALE_VISUAL_BASELINE` erandita. Pildid on renderdatud Linuxi Chromium
+  1194-ga; vt `docs/baseline.md` fondihoiatust.
+- `tools/preflight.mjs` kontrollib, et `dist/` ja `dist/index.html` on olemas ning
+  `dist/` sisaldab vähemalt ühte faili. Tühja `dist/` korral läbisid URL-i ja tokeni
+  lekkekontrollid varem vaikselt tühjal sisul.
+
+### P1 – kasutajale nähtav
+
+- **Turukaardi „N p vana“ märgis ei liikunud offline-režiimis edasi.** Kütuse ja
+  Euribori kaarti uuendati ainult uue sünkroonimisega ning vanus arvutati
+  `Date.now()`-st. Kolm identset `applyStale` meetodit asendab
+  `updateMarketCardStale(data, name, cardEl, staleEl, nowMs)` (`ui/panels/helpers.ts`);
+  `MarketFuelPanel` ja `MarketEuriborPanel` saavad `now: Date` ning `tick(now)`
+  uuendab märgist iga minut. `MarketElectricityPanel.tick(now)` arvutab hetkehinna ja
+  märgise viimastest andmetest.
+- Kuupäeva vahetusel uuendab `AppView.tickTimeSensitive` lisaks prügiveole, teadetele
+  ja hoiatusribale ka ilma, maja, elektri, kütuse ja Euribori paneele. Kõik patchivad
+  olemasolevat DOM-i.
+- **Elektrigraafiku ajatelg kasutas alati `Europe/Tallinn`-i** ja lõi igal
+  ümberehitusel uue `Intl.DateTimeFormat`-i. Nüüd `getFormatters(timeZone).time`;
+  ajavöönd on graafiku andmevõtme osa.
+- **Demoandmete elektrihinnad nihkusid DST piiril tunni võrra.** `normalizeDemoPayload`
+  nihutas UTC-keskööde vahega, mistõttu talveaja näidis suvepäeval algas kell 01:00.
+  Nüüd nihutatakse kalendripäevi ja kohalik kellaaeg säilib (`zonedDateTimeToInstant`
+  `domain/time/zoned.ts`-is). Seadistatud `settings.timeZone` jääb kehtima.
+
+### P1 – Apps Script ja Windowsi kiosk
+
+- `getWeather_` pärib Open-Meteo ja Keskkonnaagentuuri vaatluse ühe
+  `UrlFetchApp.fetchAll`-iga. Mõlemal on 15 min negatiivne vahemälu
+  (`hasRecentApiFailure_` / `storeApiFailure_`); kui `fetchAll` aegub, märgitakse
+  valikuline vaatlus tõrkeks ja prognoos päritakse üksi.
+- `parseElectricityResponse_` ei vali hetkehinnaks punkti, mis on üle tunni vana
+  (`KU.electricityCurrentMaxAgeMs`) või alles tulevikus; varem näidati pooliku päeva
+  korral tunde vana hinda ja enne esimest punkti tulevast hinda.
+- `kiosk/local-server.ps1` loeb päised enne ka `/healthz` vastust (Windowsi loopback
+  saatis lugemata andmetega sokli sulgemisel TCP RST-i), kasutab 5 s
+  lugemis-/saatmisaegu ja piirab samaaegsed ühendused 16-ga (`SemaphoreSlim`).
+- `kiosk/watchdog.ps1` sulgeb iga taaskäivituse eel kõik KÜ Edge'i protsessid
+  (`--user-data-dir …KuInfoekraan\edge-profile` või kioskiaken õigel pordil) ja ootab
+  kuni 10 s profiililuku vabanemist. Varem suleti Edge ainult aegunud heartbeat'i
+  korral, mis võis jätta topeltakna või lukus profiili.
+
+### P2
+
+- `validateElectricity` kontrollib ka `currentPrice`, `min`, `average` ja `max`
+  usutavat vahemikku; vahemikuväline koondväärtus jäetakse välja ja logitakse.
+- `formatNumber` puhverdab `Intl.NumberFormat` eksemplarid komakohtade arvu järgi.
+- `apps-script/Domain.gs` pariteeditest käivitab genereeritud faili `node:vm`-is ja
+  võrdleb `easterSundayParts_`, `isEstonianPublicHoliday_` ja `weatherPhenomenonEt_`
+  tulemusi `src/domain/**` funktsioonidega.
+
+### Testid
+
+- Vitest 18 faili / 160 testi (oli 15 / 134). Uued: `tests/dom/market-stale.spec.ts`,
+  `tests/unit/timezone-validation.spec.ts`, `tests/contract/apps-script-sources.spec.ts`
+  (käivitab päris `.gs` koodi vm-is Google'i teenuste asendustega) ja Domain.gs
+  pariteet `tests/unit/domain.spec.ts`-is. Kõik uued regressioonitestid kukuvad
+  eelmise koodiga läbi.
+- Preflight 145 kontrolli (oli 135), sh ühtne aegumismärgis, graafiku ajavöönd,
+  serveri päiste lugemise järjekord ja watchdogi Edge'i sulgemine.
+
 ## 4.5.0 – 2026-10-06
 
 Ülevaatus päris Chromiumis renderdatud 1920 × 1080 ekraanipiltide põhjal. Kõik allolevad

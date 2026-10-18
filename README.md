@@ -191,7 +191,7 @@ http://127.0.0.1:8765/?demo=1&notices=0
 http://127.0.0.1:8765/?debug=1
 ```
 
-Demorežiimis ei tehta välispäringuid ega reload'e. Visuaalregressioon kasutab fikseeritud kella ja kuut 1920 × 1080 olekut. Commit'itud baseline'e tohib release-tõendina kasutada alles siis, kui nende `build-version.txt` vastab projekti versioonile; 4.5.0 puhul on vana baseline teadlik release-blokeerija kuni `npm run test:visual:update` käivitamiseni kioskiga võrreldaval masinal.
+Demorežiimis ei tehta välispäringuid ega reload'e. Visuaalregressioon kasutab fikseeritud kella ja kuut 1920 × 1080 olekut. Commit'itud baseline'e tohib release-tõendina kasutada alles siis, kui nende `build-version.txt` vastab projekti versioonile. 4.5.0 baseline'id on uuendatud Linuxi Chromiumis (vt `docs/baseline.md`); Windowsi kioskimasinal võib teksti rasterdus erineda, nii et seal tuleb need enne võrdlust kohalikult uuesti genereerida.
 
 ## Offline-käitumine
 

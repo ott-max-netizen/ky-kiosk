@@ -36,6 +36,9 @@ public sealed class KuInfoServer {
   private readonly string configPath;
   private readonly string heartbeatPath;
   private readonly string signature;
+  // Kioskis on üks brauser; piirang hoiab ära, et rippuvad või pahatahtlikud
+  // loopback-ühendused tühjendaksid lõimekogumi ja blokeeriksid /healthz-i.
+  private readonly SemaphoreSlim connectionGate = new SemaphoreSlim(16, 16);
   private readonly HashSet<string> extensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
     ".html", ".css", ".js", ".json", ".png", ".svg", ".ico", ".webmanifest"
   };
@@ -63,16 +66,23 @@ public sealed class KuInfoServer {
     listener.Start();
     try {
       while (!token.IsCancellationRequested) {
-        var client = await listener.AcceptTcpClientAsync().ConfigureAwait(false);
-        Task.Run(() => Handle(client), token);
+        await connectionGate.WaitAsync(token).ConfigureAwait(false);
+        TcpClient client;
+        try { client = await listener.AcceptTcpClientAsync().ConfigureAwait(false); }
+        catch { connectionGate.Release(); throw; }
+        Task.Run(() => {
+          try { Handle(client); }
+          catch { }
+          finally { connectionGate.Release(); }
+        });
       }
     } finally { listener.Stop(); }
   }
 
   private void Handle(TcpClient client) {
     using (client) {
-      client.ReceiveTimeout = 1000;
-      client.SendTimeout = 3000;
+      client.ReceiveTimeout = 5000;
+      client.SendTimeout = 5000;
       using (var stream = client.GetStream())
       using (var reader = new StreamReader(stream, Encoding.ASCII, false, 4096, true)) {
         string requestLine;
@@ -83,13 +93,17 @@ public sealed class KuInfoServer {
         var target = parts.Length > 1 ? parts[1] : "/";
         var path = target.Split('?')[0];
 
+        // Päised loetakse enne igat vastust, ka /healthz puhul. Lugemata andmetega
+        // sokli sulgemine saadab Windowsis TCP RST-i ja klient näeb vastuse asemel
+        // "connection reset" viga, mis võib watchdogi asjatult käivitada.
+        try {
+          while (!String.IsNullOrEmpty(reader.ReadLine())) { }
+        } catch { }
+
         if (path == "/healthz") {
           Write(stream, method, "200 OK", "text/plain; charset=utf-8", Encoding.UTF8.GetBytes(signature));
           return;
         }
-        try {
-          while (!String.IsNullOrEmpty(reader.ReadLine())) { }
-        } catch { }
 
         if (path == "/heartbeat") {
           if (method != "POST") { Write(stream, method, "405 Method Not Allowed", "text/plain; charset=utf-8", Encoding.UTF8.GetBytes("405")); return; }
