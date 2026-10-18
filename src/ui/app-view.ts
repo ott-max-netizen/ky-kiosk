@@ -142,13 +142,13 @@ export class AppView {
       next.versions.fuel !== previousVersions.fuel ||
       next.versions.status !== previousVersions.status
     )
-      this.fuel.update({ data: next.data, timeZone });
+      this.fuel.update({ data: next.data, now, timeZone });
     if (
       force ||
       next.versions.euribor !== previousVersions.euribor ||
       next.versions.status !== previousVersions.status
     )
-      this.euribor.update({ data: next.data, timeZone });
+      this.euribor.update({ data: next.data, now, timeZone });
     if (force || next.versions.status !== previousVersions.status) this.marketSummary.update(next.data);
     this.statusBar.update({ state: next, config: this.config, timeZone });
     this.staleBanner.update({ data: next.data, nowMs: now.getTime() });
@@ -178,6 +178,10 @@ export class AppView {
       this.lastMinuteKey = minuteKey;
       this.buses.update({ timetable: BUS_TIMETABLE, now, config: { ...this.config, timeZone } });
       this.electricity.update({ data: this.state.data, now, timeZone });
+      // Turukaartide „N p vana“ märgis peab liikuma kellaga ka siis, kui
+      // võrgusünkroonimist pikalt ei tule ja store'i versioonid ei muutu.
+      this.fuel.tick(now);
+      this.euribor.tick(now);
     }
     if (dateKey !== this.lastDateKey) {
       this.lastDateKey = dateKey;
@@ -188,6 +192,14 @@ export class AppView {
       });
       this.updateWaste(now, timeZone);
       this.staleBanner.update({ data: this.state.data, nowMs: now.getTime() });
+      // Pikas offline-režiimis ei muutu andmeversioonid, seega uuendatakse keskööl
+      // ka kuupäevasilte ja aegumismärgiseid sisaldavad kaardid. Kõik paneelid
+      // patchivad olemasolevat DOM-i, nii et see ei loo uusi elemente. Elektrikaart
+      // uuendati juba sama tiksu minutiharus (päevavahetus on ka minutivahetus).
+      this.weather.update({ data: this.state.data, timeZone });
+      this.house.update({ data: this.state.data, timeZone });
+      this.fuel.update({ data: this.state.data, now, timeZone });
+      this.euribor.update({ data: this.state.data, now, timeZone });
     }
   }
 

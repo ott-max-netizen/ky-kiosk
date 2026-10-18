@@ -1,4 +1,5 @@
 import type { ElectricityPoint } from "../../data/types";
+import { getFormatters } from "../../domain/time/formatters";
 import { formatNumber } from "../dom";
 import { chartFontSize, estimateLabelWidth, patchAttributes, svgElement } from "./svg";
 
@@ -33,15 +34,16 @@ export class ElectricityChart {
     this.container.appendChild(this.svg);
   }
 
-  update(points: ElectricityPoint[], currentIndex: number): void {
+  update(points: ElectricityPoint[], currentIndex: number, timeZone = "Europe/Tallinn"): void {
     this.mount();
     const clean = points
       .map((point) => ({ time: point.time, price: Number(point.price) }))
       .filter((point) => Number.isFinite(point.price) && Number.isFinite(Date.parse(point.time)));
-    const key = clean.map((point) => `${point.time}:${point.price}`).join("|");
+    // Ajavöönd on võtme osa: teljesildid sõltuvad sellest, mitte ainult punktidest.
+    const key = `${timeZone}#${clean.map((point) => `${point.time}:${point.price}`).join("|")}`;
     if (key !== this.dataKey) {
       this.dataKey = key;
-      this.rebuildData(clean);
+      this.rebuildData(clean, timeZone);
     }
     this.patchCurrent(currentIndex);
   }
@@ -57,7 +59,7 @@ export class ElectricityChart {
     this.currentIndex = -1;
   }
 
-  private rebuildData(points: CleanPoint[]): void {
+  private rebuildData(points: CleanPoint[], timeZone: string): void {
     if (!this.svg || !this.gridGroup || !this.plotGroup || !this.labelGroup) return;
     this.gridGroup.replaceChildren();
     this.plotGroup.replaceChildren();
@@ -132,6 +134,7 @@ export class ElectricityChart {
       this.bars.push(rect);
     });
 
+    const timeFormat = getFormatters(timeZone).time;
     const timeIndexes = [0, Math.floor((points.length - 1) / 2), points.length - 1];
     for (const [position, index] of timeIndexes.entries()) {
       const point = points[index];
@@ -143,11 +146,7 @@ export class ElectricityChart {
         "text-anchor": position === 0 ? "start" : position === 2 ? "end" : "middle",
         class: "market-chart-label",
       });
-      label.textContent = new Intl.DateTimeFormat("et-EE", {
-        timeZone: "Europe/Tallinn",
-        hour: "2-digit",
-        minute: "2-digit",
-      }).format(date);
+      label.textContent = timeFormat.format(date);
       this.labelGroup.appendChild(label);
     }
   }

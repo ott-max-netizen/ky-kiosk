@@ -1,5 +1,124 @@
 # Muudatused
 
+## 4.5.0 järelparandused – 2026-10-18
+
+Versioon jääb 4.5.0-ks. Renderdus ei muutunud: kuus 1920 × 1080 olekut renderdati
+muutmata 4.5.0 koodiga ja uue koodiga samas keskkonnas ning need olid pikslitäpselt
+samad (0,000% erinevust).
+
+### P0 – release-värav
+
+- **Visuaalbaseline'id on nüüd 4.5.0 omad.** `npm run test:visual:update` uuendas kuus
+  PNG-d (kolme vaatega maja paneel, ühtlustatud turukaardid) ja `build-version.txt`
+  on `4.5.0`. `npm run preflight` läbib esimest korda ilma
+  `KU_ALLOW_STALE_VISUAL_BASELINE` erandita. Pildid on renderdatud Linuxi Chromium
+  1194-ga; vt `docs/baseline.md` fondihoiatust.
+- `tools/preflight.mjs` kontrollib, et `dist/` ja `dist/index.html` on olemas ning
+  `dist/` sisaldab vähemalt ühte faili. Tühja `dist/` korral läbisid URL-i ja tokeni
+  lekkekontrollid varem vaikselt tühjal sisul.
+
+### P1 – kasutajale nähtav
+
+- **Turukaardi „N p vana“ märgis ei liikunud offline-režiimis edasi.** Kütuse ja
+  Euribori kaarti uuendati ainult uue sünkroonimisega ning vanus arvutati
+  `Date.now()`-st. Kolm identset `applyStale` meetodit asendab
+  `updateMarketCardStale(data, name, cardEl, staleEl, nowMs)` (`ui/panels/helpers.ts`);
+  `MarketFuelPanel` ja `MarketEuriborPanel` saavad `now: Date` ning `tick(now)`
+  uuendab märgist iga minut. `MarketElectricityPanel.tick(now)` arvutab hetkehinna ja
+  märgise viimastest andmetest.
+- Kuupäeva vahetusel uuendab `AppView.tickTimeSensitive` lisaks prügiveole, teadetele
+  ja hoiatusribale ka ilma, maja, elektri, kütuse ja Euribori paneele. Kõik patchivad
+  olemasolevat DOM-i.
+- **Elektrigraafiku ajatelg kasutas alati `Europe/Tallinn`-i** ja lõi igal
+  ümberehitusel uue `Intl.DateTimeFormat`-i. Nüüd `getFormatters(timeZone).time`;
+  ajavöönd on graafiku andmevõtme osa.
+- **Demoandmete elektrihinnad nihkusid DST piiril tunni võrra.** `normalizeDemoPayload`
+  nihutas UTC-keskööde vahega, mistõttu talveaja näidis suvepäeval algas kell 01:00.
+  Nüüd nihutatakse kalendripäevi ja kohalik kellaaeg säilib (`zonedDateTimeToInstant`
+  `domain/time/zoned.ts`-is). Seadistatud `settings.timeZone` jääb kehtima.
+
+### P1 – Apps Script ja Windowsi kiosk
+
+- `getWeather_` pärib Open-Meteo ja Keskkonnaagentuuri vaatluse ühe
+  `UrlFetchApp.fetchAll`-iga. Mõlemal on 15 min negatiivne vahemälu
+  (`hasRecentApiFailure_` / `storeApiFailure_`); kui `fetchAll` aegub, märgitakse
+  valikuline vaatlus tõrkeks ja prognoos päritakse üksi.
+- `parseElectricityResponse_` ei vali hetkehinnaks punkti, mis on üle tunni vana
+  (`KU.electricityCurrentMaxAgeMs`) või alles tulevikus; varem näidati pooliku päeva
+  korral tunde vana hinda ja enne esimest punkti tulevast hinda.
+- `kiosk/local-server.ps1` loeb päised enne ka `/healthz` vastust (Windowsi loopback
+  saatis lugemata andmetega sokli sulgemisel TCP RST-i), kasutab 5 s
+  lugemis-/saatmisaegu ja piirab samaaegsed ühendused 16-ga (`SemaphoreSlim`).
+- `kiosk/watchdog.ps1` sulgeb iga taaskäivituse eel kõik KÜ Edge'i protsessid
+  (`--user-data-dir …KuInfoekraan\edge-profile` või kioskiaken õigel pordil) ja ootab
+  kuni 10 s profiililuku vabanemist. Varem suleti Edge ainult aegunud heartbeat'i
+  korral, mis võis jätta topeltakna või lukus profiili.
+
+### P2
+
+- `validateElectricity` kontrollib ka `currentPrice`, `min`, `average` ja `max`
+  usutavat vahemikku; vahemikuväline koondväärtus jäetakse välja ja logitakse.
+- `formatNumber` puhverdab `Intl.NumberFormat` eksemplarid komakohtade arvu järgi.
+- `apps-script/Domain.gs` pariteeditest käivitab genereeritud faili `node:vm`-is ja
+  võrdleb `easterSundayParts_`, `isEstonianPublicHoliday_` ja `weatherPhenomenonEt_`
+  tulemusi `src/domain/**` funktsioonidega.
+
+### Mitme agendi ülevaatuse järel
+
+Diffi vaatasid sõltumatult üle viis ülevaatajat. Iga leidu üritasid vastuväitjad ümber
+lükata: 10 leidu kinnitati ja 3 lükati ümber (sh `0,000%` pikslivõrdlus, mis kordus
+sõltumatult).
+
+- **Blokeeriv – `local-server.ps1` ei oleks Windowsis kompileerunud.** Ootamata
+  `Task.Run` `async` meetodis annab hoiatuse CS4014, mille Windows PowerShell 5.1
+  `Add-Type` muudab veaks. Viga oli olemas juba 4.x-is. Mono `mcs -langversion:5
+  -warnaserror` ja Roslyn (LangVersion 5) andsid CS4014 nii vana kui uue koodi puhul.
+  Ühenduse käsitlus käivitub nüüd eraldi mitte-async meetodist `Dispatch`.
+  `tests/contract/kiosk-server.spec.ts` kontrollib seda staatiliselt ning Mono
+  olemasolul kompileerib ja käivitab serveri (`/healthz`, `/heartbeat`).
+- **`/healthz` viivitus jõudeolevate ühenduste korral.** Mono all viivitasid 10
+  ootavat ühendust `/healthz` vastust 3,3 s (watchdogi piir 2 s), sest lõimekogum lisab
+  lõimi aeglaselt. `ThreadPool.SetMinThreads(24)` katab kõik 16 lubatud ühendust; kuni
+  15 jõudeoleva ühendusega vastab `/healthz` nüüd 0,03 s jooksul.
+- `zonedDateTimeToInstant` käsitleb DST-vahetust igas ajavööndis ühtmoodi (Temporal
+  `"later"`): auk nihkub edasi ka UTC-st läänes (New York 02:30 → 03:30 EDT) ja
+  kordustunnist valitakse hilisem hetk. Kontrollitud kõigi 2026. aasta veerandtundidega
+  Tallinnas, New Yorgis ja Lord Howe'l (30 min DST).
+- `normalizeDemoPayload` ei tekita DST-päeval kahte sama ajatempliga punkti: kevadel jääb
+  23 tundi ja augu hetk kannab päris 04:00 hinda.
+- `watchdog.ps1`: `Wait-Process` on `try/catch`-is, sest protsessi lõppemise võidujooks
+  võib visata terminaalse vea, mida `-ErrorAction` ei püüa, ja taaskäivitus jääks vahele.
+- Testid tabavad nüüd ka eraldi minutilise `tick`-i (sama päeva 25 h piir), Apps Scripti
+  korduspäringu URL-i ning preflight kontrollib `Stop-KuEdge` **kutset** enne
+  `Start-Process`-i, mitte ainult funktsiooni nime.
+- Dokumentatsioon: runbook'i 4.5.0 seis on ajakohane; uus jaotis „Windowsi
+  kioskiskriptide käsitest“; baseline'i poliitika muutus on kirjas
+  `docs/baseline.md`-s ning Windowsi/Edge'i masinal tehakse A/B võrdlus eelmise
+  release'i piltide vastu, mitte testitava koodiga genereeritud piltide vastu.
+- Parandusi vaadati teises voorus uuesti üle: 10 väikest leidu kinnitati ja 3 lükati
+  ümber, koodivigu ei leitud. Parandatud:
+  - Runbook'i käsitest peatab enne käsitsi käivitatud serverit ka watchdogi ja
+    käivitab ülesanded õiges järjekorras uuesti.
+  - Paralleeltest kasutab `curl.exe --parallel-max 40`, mitte PowerShell 7
+    vaikimisi 5 lõime.
+  - Heartbeat'i test lõpetab renderdajaprotsessid, mitte ei muuda faili aega.
+  - A/B protseduur nimetab konkreetse commit'i ja sisaldab `npm ci` sammu.
+  - `tests/contract/kiosk-server.spec.ts` kontrollib, et server ei vasta enne päiste
+    lõppu (tabab päiste lugemise järjekorra taandumist). Testil on vaba port,
+    2 s ajapiirang ja `mono` lõpetatakse igal juhul.
+
+### Testid
+
+- Vitest 19 faili / 171 testi (oli 15 / 134), läbivad ka `TZ=UTC`,
+  `TZ=America/Los_Angeles` ja `TZ=Asia/Tokyo` korral. Uued: `tests/dom/market-stale.spec.ts`,
+  `tests/unit/timezone-validation.spec.ts`, `tests/contract/apps-script-sources.spec.ts`
+  (käivitab päris `.gs` koodi vm-is Google'i teenuste asendustega),
+  `tests/contract/kiosk-server.spec.ts` ja Domain.gs pariteet `tests/unit/domain.spec.ts`-is.
+  Kõik uued regressioonitestid kukuvad eelmise koodiga või vastava mutatsiooniga läbi.
+- Preflight 148 kontrolli (oli 135), sh ühtne aegumismärgis, graafiku ajavöönd,
+  serveri päiste lugemise järjekord, watchdogi Edge'i sulgemine ja kioskiskriptide
+  Windows-1252 jutumärgiohutus.
+
 ## 4.5.0 – 2026-10-06
 
 Ülevaatus päris Chromiumis renderdatud 1920 × 1080 ekraanipiltide põhjal. Kõik allolevad

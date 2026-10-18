@@ -10,7 +10,8 @@ const KU = {
   electricityCacheSeconds: 900,
   fuelCacheSeconds: 21600,
   euriborCacheSeconds: 21600,
-  negativeCacheSeconds: 900
+  negativeCacheSeconds: 900,
+  electricityCurrentMaxAgeMs: 3600000
 };
 
 function setup() {

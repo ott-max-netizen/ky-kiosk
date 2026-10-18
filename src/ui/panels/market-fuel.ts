@@ -1,11 +1,12 @@
 import type { DashboardData } from "../../data/types";
 import { createElement, formatNumber, requireElement, setHidden, setText } from "../dom";
 import { reconcileChildren } from "../reconcile";
-import { formatDateValue, sectionUpdatedTime } from "./helpers";
+import { formatDateValue, sectionUpdatedTime, updateMarketCardStale } from "./helpers";
 import type { Panel } from "./panel";
 
 export interface FuelSlice {
   data: DashboardData;
+  now: Date;
   timeZone: string;
 }
 
@@ -16,6 +17,7 @@ export class MarketFuelPanel implements Panel<FuelSlice> {
   private stale!: HTMLElement;
   private card!: HTMLElement;
   private mounted = false;
+  private lastData: DashboardData | null = null;
 
   mount(): void {
     if (this.mounted) return;
@@ -36,7 +38,7 @@ export class MarketFuelPanel implements Panel<FuelSlice> {
       if (existing?.classList.contains("market-empty") && this.values.childElementCount === 1)
         setText(existing, "Kütusehind puudub");
       else this.values.replaceChildren(createElement("div", "market-empty", "Kütusehind puudub"));
-      this.applyStale(slice.data);
+      this.applyStale(slice);
       return;
     }
     if (this.values.firstElementChild?.classList.contains("market-empty")) this.values.replaceChildren();
@@ -77,23 +79,22 @@ export class MarketFuelPanel implements Panel<FuelSlice> {
         setHidden(priceElement.lastElementChild as HTMLElement, missing);
       },
     );
-    this.applyStale(slice.data);
+    this.applyStale(slice);
+  }
+
+  /** Aegumismärgis liigub kellaga edasi ka ilma uue sünkroonimiseta. */
+  tick(now: Date): void {
+    if (!this.mounted || !this.lastData) return;
+    updateMarketCardStale(this.lastData, "fuel", this.card, this.stale, now.getTime());
   }
 
   destroy(): void {
+    this.lastData = null;
     this.mounted = false;
   }
 
-  private applyStale(data: DashboardData): void {
-    const error = data.sectionErrors.fuel;
-    const updated = Date.parse(data.sectionUpdatedAt.fuel ?? "");
-    const age = Number.isFinite(updated) ? Date.now() - updated : Number.POSITIVE_INFINITY;
-    const stale = Boolean(error) || age > 86_400_000;
-    this.card.classList.toggle("is-stale", stale);
-    this.stale.hidden = !stale;
-    setText(
-      this.stale,
-      stale ? (error ? "vahemälust" : `${Math.max(1, Math.floor(age / 86_400_000))} p vana`) : "",
-    );
+  private applyStale(slice: FuelSlice): void {
+    this.lastData = slice.data;
+    updateMarketCardStale(slice.data, "fuel", this.card, this.stale, slice.now.getTime());
   }
 }

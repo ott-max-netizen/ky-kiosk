@@ -27,6 +27,29 @@ function Get-KioskProcesses {
     $_.CommandLine -and $_.CommandLine -match '--kiosk' -and $_.CommandLine -match $endpointPattern
   })
 }
+# Kõik KÜ infoekraani Edge'i protsessid: kioskiaken ja selle alamprotsessid
+# (renderdaja, GPU jne), mis jagavad sama --user-data-dir profiili. Tavalist
+# kasutaja Edge'i, mis töötab teise profiiliga, ei puudutata.
+function Get-KuEdgeProcesses {
+  $endpointPattern = [regex]::Escape("127.0.0.1:$Port")
+  $profilePattern = '--user-data-dir="?[^"]*' + [regex]::Escape('KuInfoekraan\edge-profile')
+  @(Get-CimInstance Win32_Process -Filter "Name='msedge.exe'" -ErrorAction SilentlyContinue | Where-Object {
+    $_.CommandLine -and (
+      $_.CommandLine -match $profilePattern -or
+      ($_.CommandLine -match '--kiosk' -and $_.CommandLine -match $endpointPattern)
+    )
+  })
+}
+function Stop-KuEdge {
+  $all = Get-KuEdgeProcesses
+  if($all.Count -eq 0){ return }
+  Write-Log "Sulgen $($all.Count) KÜ Edge'i protsessi enne taaskäivitust"
+  $all | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+  # Oota, kuni profiililukk vabaneb; muidu avab uus Edge teise akna või keeldub profiilist.
+  # Wait-Process võib visata terminaalse vea, kui protsess lõpetab kontrolli ja ootele
+  # võtmise vahel; -ErrorAction seda ei püüa ja taaskäivitus jääks vahele.
+  try { Wait-Process -Id ($all | ForEach-Object { $_.ProcessId }) -Timeout 10 -ErrorAction SilentlyContinue } catch {}
+}
 function Test-Heartbeat {
   if(-not (Test-Path -LiteralPath $heartbeat)){ return ((Get-Date) - $lastRestart).TotalSeconds -lt $HeartbeatMaxAgeSeconds }
   return ((Get-Date) - (Get-Item -LiteralPath $heartbeat).LastWriteTime).TotalSeconds -le $HeartbeatMaxAgeSeconds
@@ -41,9 +64,10 @@ while($true){
     $cooldownOk = ((Get-Date) - $lastRestart).TotalSeconds -ge 120
     if(( -not $serverOk -or -not $edgeOk -or -not $heartbeatOk) -and $cooldownOk){
       Write-Log "Taaskäivitan infoekraani. serverOk=$serverOk edgeOk=$edgeOk heartbeatOk=$heartbeatOk"
-      if($edgeOk -and -not $heartbeatOk){
-        $processes | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
-      }
+      # Sulge iga taaskäivituse eel kõik KÜ Edge'i protsessid, ka siis, kui kioskiakent
+      # ei leitud: profiili lukustanud jääkprotsess või vana URL-iga aken põhjustaks
+      # muidu topeltakna või profiililukustuse.
+      Stop-KuEdge
       Start-Process -FilePath $startScript -WorkingDirectory $Root -WindowStyle Hidden
       $lastRestart = Get-Date
       Start-Sleep -Seconds 10

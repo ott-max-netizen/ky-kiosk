@@ -1,7 +1,9 @@
 import type { DashboardData, SectionName } from "../../data/types";
 import { type AppFormatters, getFormatters } from "../../domain/time/formatters";
 import { parseDateOnly, validDate } from "../../domain/time/zoned";
-import { requireElement, setHidden, setText } from "../dom";
+import { requireElement, setClass, setHidden, setText } from "../dom";
+
+const DAY_MS = 86_400_000;
 
 const MONTHS_SHORT = [
   "jaan",
@@ -81,6 +83,27 @@ export function updateSectionStale(
   setHidden(element, false);
   element.title = error;
   return true;
+}
+
+/**
+ * Turukaardi aegumismärgis: sektsiooni viga → „vahemälust“, üle 24 h vanad andmed →
+ * „N p vana“. Vanus arvutatakse kutsuja antud kellast, mitte `Date.now()`-st, et
+ * märgis uueneks ka pikas offline-režiimis, kus uut sünkroonimist ei tule.
+ */
+export function updateMarketCardStale(
+  data: DashboardData,
+  name: SectionName,
+  cardEl: HTMLElement,
+  staleEl: HTMLElement,
+  nowMs: number,
+): void {
+  const error = data.sectionErrors[name];
+  const updated = Date.parse(data.sectionUpdatedAt[name] ?? "");
+  const age = Number.isFinite(updated) ? nowMs - updated : Number.POSITIVE_INFINITY;
+  const stale = Boolean(error) || age > DAY_MS;
+  setClass(cardEl, "is-stale", stale);
+  setHidden(staleEl, !stale);
+  setText(staleEl, stale ? (error ? "vahemälust" : `${Math.max(1, Math.floor(age / DAY_MS))} p vana`) : "");
 }
 
 export function sectionUpdatedTime(data: DashboardData, name: SectionName, timeZone: string): string {

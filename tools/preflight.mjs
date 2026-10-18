@@ -237,7 +237,12 @@ function walkDist(directory) {
       distContent.push(readFileSync(path, "utf8"));
   }
 }
+// Puuduva `dist/` korral kukkus readdirSync varem erindiga, aga tühja kausta korral
+// läbis tsükkel vaikselt 0 failiga ja URL-i/tokeni kontrollid "läbisid" tühjal sisul.
+check(existsSync("dist") && statSync("dist").isDirectory(), "dist/ kaust on olemas (käivita npm run build)");
+check(existsSync("dist/index.html"), "dist/index.html on olemas");
 walkDist("dist");
+check(distContent.length >= 1, "dist/ sisaldab vähemalt ühte kontrollitavat faili");
 const built = distContent.join("\n");
 check(!/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]{20,}/.test(built), "Apps Scripti URL ei ole buildis");
 check(!/[A-Fa-f0-9]{64}/.test(built), "feedToken ei ole buildis");
@@ -423,6 +428,46 @@ const sourcesGs = readFileSync("apps-script/Sources.gs", "utf8");
 check(
   sourcesGs.includes("storeApiFailure_") && sourcesGs.includes("negativeCacheSeconds"),
   "turuallikatel on negatiivne vahemälu",
+);
+const weatherGs = sourcesGs.slice(sourcesGs.indexOf("function getWeather_("));
+check(
+  /UrlFetchApp\.fetchAll\(/.test(weatherGs.slice(0, weatherGs.indexOf("\nfunction ", 1))) &&
+    weatherGs.includes("hasRecentApiFailure_"),
+  "ilmaallikad päritakse paralleelselt ja negatiivse vahemäluga",
+);
+
+// 4.5.0 järelparandused: aegumismärgis kella järgi, ajavöönd graafikus, kioskiserver.
+for (const panel of ["market-electricity", "market-euribor", "market-fuel"]) {
+  const panelSource = readFileSync(`src/ui/panels/${panel}.ts`, "utf8");
+  check(
+    panelSource.includes("updateMarketCardStale(") && !panelSource.includes("Date.now()"),
+    `${panel} kasutab ühist kellapõhist aegumismärgist`,
+  );
+}
+check(
+  !readFileSync("src/ui/charts/electricity-chart.ts", "utf8").includes('timeZone: "Europe/Tallinn"'),
+  "elektrigraafiku ajatelg kasutab seadistatud ajavööndit",
+);
+const headerDrain = server.indexOf("while (!String.IsNullOrEmpty(reader.ReadLine()))");
+check(
+  headerDrain > 0 && headerDrain < server.indexOf('if (path == "/healthz")'),
+  "kioskiserver loeb päised enne /healthz vastust",
+);
+// Windows PowerShell 5.1 loeb BOM-ita UTF-8 skripti Windows-1252-na. Kui mõne märgi
+// UTF-8 baitidest saab 1252-s nutikas jutumärk (nt „–“ → 0x93 “, „→“ → 0x92 ’),
+// käsitleb PowerShell seda stringi piirajana ja skript ei parsi.
+for (const name of readdirSync("kiosk").filter((file) => file.endsWith(".ps1"))) {
+  const bytes = readFileSync(join("kiosk", name));
+  const quoteBytes = [0x82, 0x84, 0x8b, 0x91, 0x92, 0x93, 0x94, 0x9b];
+  check(
+    bytes.subarray(0, 3).equals(Buffer.from([0xef, 0xbb, 0xbf])) ||
+      !bytes.some((byte) => quoteBytes.includes(byte)),
+    `kiosk/${name} on Windows PowerShell 5.1-s jutumärgiohutu`,
+  );
+}
+check(
+  /\n\s+Stop-KuEdge\s*\r?\n\s+Start-Process -FilePath \$startScript/.test(watchdogSource),
+  "watchdog sulgeb enne taaskäivitust KÜ Edge'i protsessid",
 );
 
 console.log(`Preflight: ${assertions} kontrolli läbitud.`);

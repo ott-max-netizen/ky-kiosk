@@ -191,7 +191,7 @@ http://127.0.0.1:8765/?demo=1&notices=0
 http://127.0.0.1:8765/?debug=1
 ```
 
-Demorežiimis ei tehta välispäringuid ega reload'e. Visuaalregressioon kasutab fikseeritud kella ja kuut 1920 × 1080 olekut. Commit'itud baseline'e tohib release-tõendina kasutada alles siis, kui nende `build-version.txt` vastab projekti versioonile; 4.5.0 puhul on vana baseline teadlik release-blokeerija kuni `npm run test:visual:update` käivitamiseni kioskiga võrreldaval masinal.
+Demorežiimis ei tehta välispäringuid ega reload'e. Visuaalregressioon kasutab fikseeritud kella ja kuut 1920 × 1080 olekut. Commit'itud baseline'e tohib release-tõendina kasutada alles siis, kui nende `build-version.txt` vastab projekti versioonile. 4.5.0 baseline'id on renderdatud Linuxi Chromium 1194-ga ja on arendus/CI keskkonna võrdlusalus (vt `docs/baseline.md`). Windowsi/Edge'i masinal tee A/B võrdlus eelmise release'i koodiga genereeritud piltide vastu (`docs/runbook.md` §3); ära genereeri võrdluspilte testitava koodiga.
 
 ## Offline-käitumine
 
@@ -237,10 +237,12 @@ Koodiga kaasas oleva Kauge peatuse sõiduplaani ametlikul allikal on algus `28.0
 
 ## Visuaalbaseline'i uuendamine
 
-Tüpograafia 4.2.0 muudab piksleid teadlikult. Genereeri 1920 × 1080 baseline'id päris Chromium/Edge keskkonnas käsuga:
+Commit'itud 1920 × 1080 baseline'id genereeritakse Linuxi Chromium 1194 võrdluskeskkonnas (vt `docs/baseline.md`) käsuga:
 
 ```bash
 npm run test:visual:update
 ```
 
-Käsk uuendab Playwrighti kuus PNG-baseline'i, kirjutab `tests/e2e/snapshots/build-version.txt` väärtuseks praeguse `package.json` versiooni ning loob juurkausta kaks demonstratsioonipilti. Tavaline preflight kukub läbi, kui baseline'i versioon ja paketi versioon ei ühti; see väldib vanade piltide esitlust uue release'i tõendusena.
+Käsk uuendab Playwrighti kuus PNG-baseline'i, kirjutab `tests/e2e/snapshots/build-version.txt` väärtuseks praeguse `package.json` versiooni ning loob juurkausta kaks demonstratsioonipilti (neid ei commit'ita). Tavaline preflight kukub läbi, kui baseline'i versioon ja paketi versioon ei ühti; see väldib vanade piltide esitlust uue release'i tõendusena.
+
+Uuenda baseline'e ainult siis, kui renderdus muutub teadlikult, ja tõenda enne, et muutus on ainult see: renderda samad olekud eelmise commit'iga samas keskkonnas, võrdle uue koodiga (A/B) ja vaata pildid silmaga üle. Commit'itud pildid on tehtud Linuxi Chromium 1194-ga; teise fondistackiga masinas (nt Windows/Edge) genereeritud pilte ei commit'ita ning seal tehakse A/B võrdlus `docs/runbook.md` §3 järgi.

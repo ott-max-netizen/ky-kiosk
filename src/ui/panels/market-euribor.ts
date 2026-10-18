@@ -1,11 +1,12 @@
 import type { DashboardData } from "../../data/types";
 import { EuriborChart } from "../charts/euribor-chart";
 import { createElement, formatNumber, requireElement, setText } from "../dom";
-import { formatDateValue, sectionUpdatedTime } from "./helpers";
+import { formatDateValue, sectionUpdatedTime, updateMarketCardStale } from "./helpers";
 import type { Panel } from "./panel";
 
 export interface EuriborSlice {
   data: DashboardData;
+  now: Date;
   timeZone: string;
 }
 
@@ -18,6 +19,7 @@ export class MarketEuriborPanel implements Panel<EuriborSlice> {
   private card!: HTMLElement;
   private chart!: EuriborChart;
   private mounted = false;
+  private lastData: DashboardData | null = null;
 
   mount(): void {
     if (this.mounted) return;
@@ -41,7 +43,7 @@ export class MarketEuriborPanel implements Panel<EuriborSlice> {
       this.chart.update([]);
       if (!this.container.querySelector(".market-empty"))
         this.container.appendChild(createElement("div", "market-empty", "Euribor puudub"));
-      this.applyStale(slice.data);
+      this.applyStale(slice);
       return;
     }
     this.container.querySelector(".market-empty")?.remove();
@@ -57,24 +59,23 @@ export class MarketEuriborPanel implements Panel<EuriborSlice> {
         .filter(Boolean)
         .join(" · "),
     );
-    this.applyStale(slice.data);
+    this.applyStale(slice);
+  }
+
+  /** Aegumismärgis liigub kellaga edasi ka ilma uue sünkroonimiseta. */
+  tick(now: Date): void {
+    if (!this.mounted || !this.lastData) return;
+    updateMarketCardStale(this.lastData, "euribor", this.card, this.stale, now.getTime());
   }
 
   destroy(): void {
+    this.lastData = null;
     this.chart?.destroy();
     this.mounted = false;
   }
 
-  private applyStale(data: DashboardData): void {
-    const error = data.sectionErrors.euribor;
-    const updated = Date.parse(data.sectionUpdatedAt.euribor ?? "");
-    const age = Number.isFinite(updated) ? Date.now() - updated : Number.POSITIVE_INFINITY;
-    const stale = Boolean(error) || age > 86_400_000;
-    this.card.classList.toggle("is-stale", stale);
-    this.stale.hidden = !stale;
-    setText(
-      this.stale,
-      stale ? (error ? "vahemälust" : `${Math.max(1, Math.floor(age / 86_400_000))} p vana`) : "",
-    );
+  private applyStale(slice: EuriborSlice): void {
+    this.lastData = slice.data;
+    updateMarketCardStale(slice.data, "euribor", this.card, this.stale, slice.now.getTime());
   }
 }

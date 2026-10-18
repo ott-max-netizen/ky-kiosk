@@ -31,6 +31,12 @@ function storeApiFailure_(key, error, seconds) {
   return { ok: false, data: null, updatedAt: null, error: message, negativeCached: true };
 }
 
+/** Tagastab negatiivselt vahemällu pandud tõrke või null, kui allikat võib uuesti pärida. */
+function hasRecentApiFailure_(key) {
+  const packet = readApiCache_(key);
+  return packet && packet.negative === true ? cachedApiResult_(packet) : null;
+}
+
 function storeApiResult_(key, data, seconds) {
   const updatedAt = new Date().toISOString();
   const packet = { data: data, updatedAt: updatedAt };
@@ -196,16 +202,20 @@ function parseElectricityResponse_(response, now, tz, tariffs, dayKey) {
     return { time: date.toISOString(), price: Math.round(price * 10000) / 10000, tariffType: tariff.type, tariffLabelEt: tariff.labelEt, milliseconds: milliseconds };
   }).filter(Boolean).sort(function(a, b) { return a.milliseconds - b.milliseconds; });
   if (!points.length) throw new Error('Eleringi vastuses puuduvad tänase Eesti hinnapiirkonna andmed.');
-  let currentIndex = 0;
-  points.forEach(function(point, index) { if (point.milliseconds <= now.getTime()) currentIndex = index; });
-  const currentPoint = points[currentIndex];
+  // Hetkehind on viimane juba alanud periood, kuid mitte vanem kui tund. Pooliku
+  // päeva vastuse korral ei näidata tunde vana või alles tulevat punkti hetkehinnana.
+  const nowMs = now.getTime();
+  let currentPoint = null;
+  points.forEach(function(point) {
+    if (point.milliseconds <= nowMs && nowMs - point.milliseconds < KU.electricityCurrentMaxAgeMs) currentPoint = point;
+  });
   const publicPoints = points.map(function(point) { return { time: point.time, price: point.price }; });
   const prices = publicPoints.map(function(point) { return point.price; });
   return {
     date: dayKey, zone: 'EE', unit: 's/kWh', includesVat: true,
-    currentPrice: currentPoint.price,
-    currentTariffType: currentPoint.tariffType,
-    currentTariffLabelEt: currentPoint.tariffLabelEt,
+    currentPrice: currentPoint ? currentPoint.price : null,
+    currentTariffType: currentPoint ? currentPoint.tariffType : '',
+    currentTariffLabelEt: currentPoint ? currentPoint.tariffLabelEt : '',
     min: Math.round(Math.min.apply(null, prices) * 10000) / 10000,
     average: Math.round((prices.reduce(function(sum, value) { return sum + value; }, 0) / prices.length) * 10000) / 10000,
     max: Math.round(Math.max.apply(null, prices) * 10000) / 10000,
@@ -321,19 +331,56 @@ function getWeather_(settings, tz) {
     }
   }
 
-  try {
-    const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + encodeURIComponent(lat) +
+  // Open-Meteo (prognoos, kohustuslik) ja Keskkonnaagentuuri vaatlus (valikuline)
+  // päritakse paralleelselt. Kumbki allikas saab ebaõnnestumisel 15 min negatiivse
+  // vahemälu, et aeguv teenus ei kulutaks iga dashboardi päringu täitmisaega.
+  const forecastFailureKey = key + '_fail_forecast';
+  const observationFailureKey = 'weather_observation_fail_v1';
+  const forecastFailure = hasRecentApiFailure_(forecastFailureKey);
+  if (forecastFailure) return forecastFailure;
+  const forecastRequest = {
+    url: 'https://api.open-meteo.com/v1/forecast?latitude=' + encodeURIComponent(lat) +
       '&longitude=' + encodeURIComponent(lon) +
       '&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m' +
       '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset' +
       '&wind_speed_unit=ms' +
       '&timezone=' + encodeURIComponent(tz) +
-      '&forecast_days=4';
+      '&forecast_days=4',
+    muteHttpExceptions: true
+  };
+  const observationRequest = hasRecentApiFailure_(observationFailureKey) ? null : {
+    url: 'https://www.ilmateenistus.ee/ilma_andmed/xml/observations.php',
+    muteHttpExceptions: true,
+    followRedirects: true
+  };
 
-    const response = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
-    if (response.getResponseCode() !== 200) throw new Error('Open-Meteo HTTP ' + response.getResponseCode());
+  let forecastResponse = null;
+  let observationResponse = null;
+  try {
+    const responses = UrlFetchApp.fetchAll(observationRequest ? [forecastRequest, observationRequest] : [forecastRequest]);
+    forecastResponse = responses[0];
+    observationResponse = observationRequest ? responses[1] : null;
+  } catch (fetchErr) {
+    // fetchAll katkestab kogu partii, kui üks päring aegub või võrgutõrge tekib, ega
+    // ütle, milline. Vaatlus on valikuline: see pannakse negatiivsesse vahemällu ja
+    // prognoosi proovitakse veel kord üksi.
+    if (!observationRequest) {
+      console.error('Weather error: ' + fetchErr);
+      return storeApiFailure_(forecastFailureKey, fetchErr, KU.negativeCacheSeconds);
+    }
+    storeApiFailure_(observationFailureKey, fetchErr, KU.negativeCacheSeconds);
+    try {
+      forecastResponse = UrlFetchApp.fetch(forecastRequest.url, { muteHttpExceptions: true });
+    } catch (retryErr) {
+      console.error('Weather error: ' + retryErr);
+      return storeApiFailure_(forecastFailureKey, retryErr, KU.negativeCacheSeconds);
+    }
+  }
 
-    const raw = JSON.parse(response.getContentText());
+  try {
+    if (forecastResponse.getResponseCode() !== 200) throw new Error('Open-Meteo HTTP ' + forecastResponse.getResponseCode());
+
+    const raw = JSON.parse(forecastResponse.getContentText());
     if (!raw.current || !raw.daily || !raw.daily.time) throw new Error('Open-Meteo vastus on puudulik.');
 
     const daily = [];
@@ -363,29 +410,32 @@ function getWeather_(settings, tz) {
       sourceName: 'Open-Meteo mudel'
     };
 
-    try {
-      const observation = getNearestOfficialObservation_(lat, lon, stationPreference);
-      if (observation && observation.temperature !== null) {
-        current.temperature = observation.temperature;
-        current.relativeHumidity = observation.relativeHumidity;
-        if (observation.windSpeed !== null) current.windSpeed = observation.windSpeed;
-        const apparent = apparentTemperatureFromObservation_(
-          observation.temperature,
-          observation.relativeHumidity,
-          observation.windSpeed
-        );
-        current.apparentTemperature = apparent !== null ? apparent : observation.temperature;
-        current.phenomenon = observation.phenomenonEt;
-        current.phenomenonRaw = observation.phenomenonRaw;
-        current.observedAt = observation.observedAt;
-        current.stationName = observation.stationName;
-        current.latitude = observation.latitude;
-        current.longitude = observation.longitude;
-        current.source = 'keskkonnaagentuur';
-        current.sourceName = 'Keskkonnaagentuur / ' + observation.stationName;
+    if (observationResponse) {
+      try {
+        const observation = parseOfficialObservation_(observationResponse, lat, lon, stationPreference);
+        if (observation && observation.temperature !== null) {
+          current.temperature = observation.temperature;
+          current.relativeHumidity = observation.relativeHumidity;
+          if (observation.windSpeed !== null) current.windSpeed = observation.windSpeed;
+          const apparent = apparentTemperatureFromObservation_(
+            observation.temperature,
+            observation.relativeHumidity,
+            observation.windSpeed
+          );
+          current.apparentTemperature = apparent !== null ? apparent : observation.temperature;
+          current.phenomenon = observation.phenomenonEt;
+          current.phenomenonRaw = observation.phenomenonRaw;
+          current.observedAt = observation.observedAt;
+          current.stationName = observation.stationName;
+          current.latitude = observation.latitude;
+          current.longitude = observation.longitude;
+          current.source = 'keskkonnaagentuur';
+          current.sourceName = 'Keskkonnaagentuur / ' + observation.stationName;
+        }
+      } catch (observationErr) {
+        storeApiFailure_(observationFailureKey, observationErr, KU.negativeCacheSeconds);
+        console.warn('Keskkonnaagentuuri hetkevaatlus ei olnud saadaval; kasutan Open-Meteo mudelit: ' + observationErr);
       }
-    } catch (observationErr) {
-      console.warn('Keskkonnaagentuuri hetkevaatlus ei olnud saadaval; kasutan Open-Meteo mudelit: ' + observationErr);
     }
 
     const weather = {
@@ -400,15 +450,11 @@ function getWeather_(settings, tz) {
     return { ok: true, data: weather, updatedAt: updatedAt };
   } catch (err) {
     console.error('Weather error: ' + err);
-    return { ok: false, data: null, updatedAt: null, error: String(err && err.message ? err.message : err) };
+    return storeApiFailure_(forecastFailureKey, err, KU.negativeCacheSeconds);
   }
 }
 
-function getNearestOfficialObservation_(lat, lon, preferredName) {
-  const response = UrlFetchApp.fetch('https://www.ilmateenistus.ee/ilma_andmed/xml/observations.php', {
-    muteHttpExceptions: true,
-    followRedirects: true
-  });
+function parseOfficialObservation_(response, lat, lon, preferredName) {
   if (response.getResponseCode() !== 200) {
     throw new Error('Keskkonnaagentuur HTTP ' + response.getResponseCode());
   }

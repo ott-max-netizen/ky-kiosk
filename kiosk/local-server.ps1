@@ -36,6 +36,9 @@ public sealed class KuInfoServer {
   private readonly string configPath;
   private readonly string heartbeatPath;
   private readonly string signature;
+  // Kioskis on üks brauser; piirang hoiab ära, et rippuvad või pahatahtlikud
+  // loopback-ühendused tühjendaksid lõimekogumi ja blokeeriksid /healthz-i.
+  private readonly SemaphoreSlim connectionGate = new SemaphoreSlim(16, 16);
   private readonly HashSet<string> extensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
     ".html", ".css", ".js", ".json", ".png", ".svg", ".ico", ".webmanifest"
   };
@@ -52,6 +55,12 @@ public sealed class KuInfoServer {
     this.configPath = Path.GetFullPath(configPath);
     this.heartbeatPath = Path.GetFullPath(heartbeatPath);
     this.signature = signature;
+    // Iga ühendus hoiab lõime kuni 5 s lugemisaja jooksul. Vaikimisi lisab lõimekogum
+    // üle protsessorite arvu uusi lõimi aeglaselt ja mõni ootav eelühendus viivitas
+    // /healthz vastust üle watchdogi 2 s piiri. Miinimum katab kõik 16 lubatud ühendust.
+    int workers, completion;
+    ThreadPool.GetMinThreads(out workers, out completion);
+    if (workers < 24) ThreadPool.SetMinThreads(24, completion);
   }
 
   private static string EnsureSeparator(string value) {
@@ -63,16 +72,29 @@ public sealed class KuInfoServer {
     listener.Start();
     try {
       while (!token.IsCancellationRequested) {
-        var client = await listener.AcceptTcpClientAsync().ConfigureAwait(false);
-        Task.Run(() => Handle(client), token);
+        await connectionGate.WaitAsync(token).ConfigureAwait(false);
+        TcpClient client;
+        try { client = await listener.AcceptTcpClientAsync().ConfigureAwait(false); }
+        catch { connectionGate.Release(); throw; }
+        Dispatch(client);
       }
     } finally { listener.Stop(); }
   }
 
+  // Eraldi mitte-async meetod: ootamata Task.Run async-meetodis annab hoiatuse CS4014,
+  // mille Windows PowerShell 5.1 Add-Type muudab kompileerimisveaks ja server ei käivitu.
+  private void Dispatch(TcpClient client) {
+    Task.Run(() => {
+      try { Handle(client); }
+      catch { }
+      finally { connectionGate.Release(); }
+    });
+  }
+
   private void Handle(TcpClient client) {
     using (client) {
-      client.ReceiveTimeout = 1000;
-      client.SendTimeout = 3000;
+      client.ReceiveTimeout = 5000;
+      client.SendTimeout = 5000;
       using (var stream = client.GetStream())
       using (var reader = new StreamReader(stream, Encoding.ASCII, false, 4096, true)) {
         string requestLine;
@@ -83,13 +105,17 @@ public sealed class KuInfoServer {
         var target = parts.Length > 1 ? parts[1] : "/";
         var path = target.Split('?')[0];
 
+        // Päised loetakse enne igat vastust, ka /healthz puhul. Lugemata andmetega
+        // sokli sulgemine saadab Windowsis TCP RST-i ja klient näeb vastuse asemel
+        // "connection reset" viga, mis võib watchdogi asjatult käivitada.
+        try {
+          while (!String.IsNullOrEmpty(reader.ReadLine())) { }
+        } catch { }
+
         if (path == "/healthz") {
           Write(stream, method, "200 OK", "text/plain; charset=utf-8", Encoding.UTF8.GetBytes(signature));
           return;
         }
-        try {
-          while (!String.IsNullOrEmpty(reader.ReadLine())) { }
-        } catch { }
 
         if (path == "/heartbeat") {
           if (method != "POST") { Write(stream, method, "405 Method Not Allowed", "text/plain; charset=utf-8", Encoding.UTF8.GetBytes("405")); return; }

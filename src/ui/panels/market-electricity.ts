@@ -7,7 +7,7 @@ import {
 import { ElectricityChart } from "../charts/electricity-chart";
 import { createElement, formatNumber, requireElement, setHidden, setText } from "../dom";
 import { reconcileChildren } from "../reconcile";
-import { formatDateValue, sectionUpdatedTime } from "./helpers";
+import { formatDateValue, sectionUpdatedTime, updateMarketCardStale } from "./helpers";
 import type { Panel } from "./panel";
 
 export interface ElectricitySlice {
@@ -28,6 +28,7 @@ export class MarketElectricityPanel implements Panel<ElectricitySlice> {
   private currentValue!: Text;
   private currentUnit!: HTMLElement;
   private mounted = false;
+  private lastSlice: ElectricitySlice | null = null;
 
   mount(): void {
     if (this.mounted) return;
@@ -50,17 +51,18 @@ export class MarketElectricityPanel implements Panel<ElectricitySlice> {
 
   update(slice: ElectricitySlice): void {
     this.mount();
+    this.lastSlice = slice;
     const value = slice.data.electricity;
     const points = this.normalizedPoints(value?.points ?? [], value?.unit);
     if (!value || !points.length) {
       setText(this.meta, "Täna · s/kWh · KM 24%");
       this.setCurrent(null);
-      this.chart.update([], -1);
+      this.chart.update([], -1, slice.timeZone);
       const existing = this.stats.firstElementChild as HTMLElement | null;
       if (existing?.classList.contains("market-empty") && this.stats.childElementCount === 1)
         setText(existing, "Elektrihind puudub");
       else this.stats.replaceChildren(createElement("div", "market-empty", "Elektrihind puudub"));
-      this.applyStale(slice.data);
+      this.applyStale(slice);
       return;
     }
     if (this.stats.firstElementChild?.classList.contains("market-empty")) this.stats.replaceChildren();
@@ -75,7 +77,7 @@ export class MarketElectricityPanel implements Panel<ElectricitySlice> {
     this.setCurrent(today && currentPoint ? currentPoint.price : null);
     if (!today) this.current.title = "Tänase päeva elektrihind pole veel saadaval";
     else this.current.removeAttribute("title");
-    this.chart.update(points, currentIndex);
+    this.chart.update(points, currentIndex, slice.timeZone);
     const prices = points.map((point) => point.price).filter(Number.isFinite);
     const stats = [
       ["min", prices.length ? Math.min(...prices) : null],
@@ -104,12 +106,23 @@ export class MarketElectricityPanel implements Panel<ElectricitySlice> {
       ? "Elering + Elekter · muutuvtasud · püsitasudeta"
       : "Elering · Nord Pool · s/kWh koos 24% KM-ga";
     setText(this.source, [sourceText, updated ? `andmed ${updated}` : ""].filter(Boolean).join(" · "));
-    this.applyStale(slice.data);
+    this.applyStale(slice);
+  }
+
+  /**
+   * Minutiline ajapõhine uuendus: praegune hind, graafiku aktiivne tulp ja
+   * aegumismärgis arvutatakse viimati saadud andmetest uue kella järgi ka siis,
+   * kui uut sünkroonimist ei tule.
+   */
+  tick(now: Date): void {
+    if (!this.mounted || !this.lastSlice) return;
+    this.update({ ...this.lastSlice, now });
   }
 
   destroy(): void {
     this.chart?.destroy();
     this.mounted = false;
+    this.lastSlice = null;
   }
 
   private normalizedPoints(points: ElectricityPoint[], unit: unknown): ElectricityPoint[] {
@@ -127,16 +140,7 @@ export class MarketElectricityPanel implements Panel<ElectricitySlice> {
     setHidden(this.currentUnit, missing);
   }
 
-  private applyStale(data: DashboardData): void {
-    const error = data.sectionErrors.electricity;
-    const updated = Date.parse(data.sectionUpdatedAt.electricity ?? "");
-    const age = Number.isFinite(updated) ? Date.now() - updated : Number.POSITIVE_INFINITY;
-    const stale = Boolean(error) || age > 86_400_000;
-    this.card.classList.toggle("is-stale", stale);
-    this.stale.hidden = !stale;
-    setText(
-      this.stale,
-      stale ? (error ? "vahemälust" : `${Math.max(1, Math.floor(age / 86_400_000))} p vana`) : "",
-    );
+  private applyStale(slice: ElectricitySlice): void {
+    updateMarketCardStale(slice.data, "electricity", this.card, this.stale, slice.now.getTime());
   }
 }

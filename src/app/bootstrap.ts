@@ -3,9 +3,18 @@ import { endpointConfigured, tokenConfigured, type RuntimeConfig } from "../conf
 import { readRuntimeConfig } from "../config/runtime-config";
 import { AppsScriptClient, ConfigurationError } from "../data/apps-script-client";
 import { createSectionVersions, mergeIncoming } from "../data/merge";
-import type { IncomingDashboardPayload, SectionName, SectionVersions } from "../data/types";
+import type { ElectricityPoint, IncomingDashboardPayload, SectionName, SectionVersions } from "../data/types";
 import { validateDashboardPayload } from "../data/validate";
 import { errorMessage, logger } from "../diagnostics/logger";
+import {
+  addCalendarDays,
+  epochDay,
+  parseDateOnly,
+  safeTimeZone,
+  ymdKey,
+  zonedDateTimeToInstant,
+  zonedParts,
+} from "../domain/time/zoned";
 import { applyPixelShift, installInteractionGuards } from "../ui/layout";
 import { AppView } from "../ui/app-view";
 import { retireServiceWorkers, tickMaintenance, tickSupervisor } from "./lifecycle";
@@ -39,18 +48,16 @@ function allVersions(value = 1): SectionVersions {
   return result;
 }
 
-function normalizeDemoPayload(
+export function normalizeDemoPayload(
   payload: IncomingDashboardPayload,
   noNotices: boolean,
 ): IncomingDashboardPayload {
   const now = new Date();
   const nowIso = now.toISOString();
-  const today = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Europe/Tallinn",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(now);
+  // Demoandmete seadistatud ajavöönd jääb kehtima; vaikimisi Europe/Tallinn.
+  const timeZone = safeTimeZone(payload.settings?.timeZone || "Europe/Tallinn");
+  const todayParts = zonedParts(now, timeZone);
+  const today = ymdKey(todayParts);
   const copy: IncomingDashboardPayload = {
     ...payload,
     updatedAt: nowIso,
@@ -62,18 +69,24 @@ function normalizeDemoPayload(
   for (const name of Object.keys(copy.sections) as SectionName[])
     copy.sections[name] = { ...copy.sections[name], ok: true, updatedAt: nowIso };
   if (payload.electricity) {
-    const sourceDate = payload.electricity.date;
-    const sourceMidnight = Date.parse(`${sourceDate}T00:00:00Z`);
-    const todayMidnight = Date.parse(`${today}T00:00:00Z`);
-    const shift = Number.isFinite(sourceMidnight) ? todayMidnight - sourceMidnight : 0;
-    copy.electricity = {
-      ...payload.electricity,
-      date: today,
-      points: payload.electricity.points.map((point) => ({
-        ...point,
-        time: new Date(Date.parse(point.time) + shift).toISOString(),
-      })),
-    };
+    // Nihutatakse kalendripäevi, mitte millisekundeid: talveaja (+02:00) näidis
+    // suveaja (+03:00) päeva peale nihutatuna peab jääma samale kohalikule
+    // kellaajale. Varasem UTC-keskööde vahe nihutas tulbad tunni võrra.
+    // DST-päeval on 23 või 25 tundi: kevadise augu tund langeb kokku järgmisega.
+    // Sama hetke kohta jääb alles hilisem (päris kellaajale vastav) punkt, et graafikul
+    // poleks kahte tulpa ühe tunni kohta.
+    const source = parseDateOnly(payload.electricity.date);
+    const dayShift = source ? epochDay(todayParts) - epochDay(source) : 0;
+    const byTime = new Map<string, ElectricityPoint>();
+    for (const point of payload.electricity.points) {
+      const instant = Date.parse(point.time);
+      if (!Number.isFinite(instant)) continue;
+      const local = zonedParts(new Date(instant), timeZone);
+      const target = { ...local, ...addCalendarDays(local, dayShift) };
+      const time = zonedDateTimeToInstant(target, timeZone).toISOString();
+      byTime.set(time, { ...point, time });
+    }
+    copy.electricity = { ...payload.electricity, date: today, points: [...byTime.values()] };
   }
   return copy;
 }
